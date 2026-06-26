@@ -53,8 +53,15 @@ export const dashboardApi = {
     return data;
   },
 
-  // English Comment: Fetches top value-for-money deals calculated globally across all active listings
-  getGlobalDeals: async (page: number = 1, pageSize: number = 50): Promise<T.GlobalDealDto[]> => {
+  // Fetches top value-for-money deals calculated globally across all active listings
+  getGlobalDeals: async (
+    page: number = 1,
+    pageSize: number = 100
+  ): Promise<{
+    page: number;
+    pageSize: number;
+    data: T.GlobalDealDto[];
+  }> => {
     const { data } = await apiClient.get("/Reports/global-deals", {
       params: {
         page,

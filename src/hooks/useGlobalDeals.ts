@@ -1,85 +1,131 @@
+// ==========================================
+// File: useGlobalDeals.ts
+// ==========================================
+
 import { useState, useEffect } from "react";
 import { dashboardApi } from "../api/dashboardApi";
 import * as T from "../types";
 
 export const useGlobalDeals = () => {
-  const [deals, setDeals] = useState<T.GlobalDealDto[]>([]);
+  const [rawDeals, setRawDeals] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // English Comment: Server-side pagination state
-  const [page, setPage] = useState<number>(1);
-  const [pageSize] = useState<number>(50);
+  // Pagination parameters
+  const [page, _setPage] = useState<number>(1);
 
-  // English Comment: UI-level filtering states
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  // English Comment: Set to an integer base scale of 1-100 instead of small decimals
+  // Page size parameters (Draft vs Applied on Execute - limited to 50)
+  const [pageSizeInput, setPageSizeInput] = useState<number>(50);
+  const [appliedPageSize, setAppliedPageSize] = useState<number>(50);
+
+  // Column-specific filter states
+  const [brandFilter, setBrandFilter] = useState<string>("");
+  const [modelFilter, setModelFilter] = useState<string>("");
+  const [maxPrice, setMaxPrice] = useState<string>("");
+  const [maxMileage, setMaxMileage] = useState<string>("");
+  const [fuelFilter, setFuelFilter] = useState<string>("");
   const [minVfm, setMinVfm] = useState<number>(0);
 
+  const setPage = (newPage: number) => {
+    const safe = Math.max(1, newPage);
+    _setPage(safe);
+  };
+
+  // Execute page size adjustments to backend
+  const execute = () => {
+    const clampedSize = Math.max(1, Math.min(50, pageSizeInput));
+    setPageSizeInput(clampedSize);
+    setAppliedPageSize(clampedSize);
+    _setPage(1);
+  };
+
+  // Re-fetch when page index or page size is executed
   useEffect(() => {
-    // English Comment: Ignore flag to prevent race conditions or state overwrites from unmounted component instances
     let isMounted = true;
 
     const fetchDeals = async () => {
       setLoading(true);
       try {
-        const response = await dashboardApi.getGlobalDeals(page, pageSize);
+        const response = await dashboardApi.getGlobalDeals(page, appliedPageSize);
 
-        if (isMounted) {
-          // English Comment: Extract the nested 'data' array property from the paginated API envelope wrapper safely
-          if (response && response.data && Array.isArray(response.data)) {
-            setDeals(response.data);
-          } else if (Array.isArray(response)) {
-            // English Comment: Fallback case if the API layer already unpacks the response envelope into a direct array
-            setDeals(response);
-          } else {
-            setDeals([]);
-          }
-          setError(null);
-        }
+        if (!isMounted) return;
+
+        const records = response && Array.isArray(response.data) ? response.data : [];
+        setRawDeals(records);
+        setError(null);
       } catch (err: unknown) {
-        if (isMounted) {
-          const errorMessage = err instanceof Error ? err.message : "Failed to fetch global deals.";
-          setError(errorMessage);
-        }
+        if (!isMounted) return;
+
+        setError(
+          err instanceof Error ? err.message : "Failed to fetch global deals."
+        );
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        if (isMounted) setLoading(false);
       }
     };
 
     fetchDeals();
 
-    // English Comment: Cleanup function toggling the active mount flag when the effect triggers a re-fetch or unmounts
     return () => {
       isMounted = false;
     };
-  }, [page, pageSize]);
+  }, [page, appliedPageSize]);
 
-  // English Comment: Map and transform values early so client-side filtering works on the 1-100 scale
-  const transformedDeals = deals.map((deal) => {
-    // English Comment: Convert the decimal score (e.g., 1.87) into a 1-100 scale (e.g., 93.5). Adjust multiplier as needed.
-    const rawScore = deal.vfmScore ?? 0;
-    const scaledScore = Math.round(rawScore * 50);
+  // Normalize mixed casing from backend payload safely
+  const transformedDeals = rawDeals.map((deal) => {
+    const rawVfm = deal.vfmScore ?? deal.VfmScore ?? 0;
 
     return {
-      ...deal,
-      vfmScore: scaledScore,
-      // English Comment: Force conversion of listingUrl to a primitive string to prevent object mismatches or type errors in layouts
-      listingUrl: deal.listingUrl ? String(deal.listingUrl) : "",
-      // English Comment: Explicitly keeping whole address data intact as specified by Addressseller requirements
-      addressSeller: deal.addressSeller || "",
+      id: deal.id ?? deal.Id,
+      brand: deal.brand ?? deal.Brand ?? "",
+      model: deal.model ?? deal.Model ?? "",
+      price: deal.price ?? deal.Price ?? 0,
+      mileage: deal.mileage ?? deal.Mileage ?? 0,
+      fuelType: deal.fuelType ?? deal.FuelType ?? "",
+      vfmScore: Math.round(rawVfm * 50),
+      addressSeller: deal.addressSeller ?? deal.AddressSeller ?? "",
     };
   });
 
-  // English Comment: Client-side filtering running directly against the newly scaled 1-100 metrics
+  // Explicit, foolproof filtering loop matching user inputs directly
   const filteredDeals = transformedDeals.filter((deal) => {
-    const brandMatch = deal.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false;
-    const modelMatch = deal.model?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false;
-    const vfmMatch = deal.vfmScore >= minVfm;
+    // 1. Brand Filter
+    const searchBrand = brandFilter.trim().toLowerCase();
+    if (searchBrand.length > 0) {
+      const dealBrand = String(deal.brand).toLowerCase();
+      if (!dealBrand.includes(searchBrand)) return false;
+    }
 
-    return (brandMatch || modelMatch) && vfmMatch;
+    // 2. Model Filter
+    const searchModel = modelFilter.trim().toLowerCase();
+    if (searchModel.length > 0) {
+      const dealModel = String(deal.model).toLowerCase();
+      if (!dealModel.includes(searchModel)) return false;
+    }
+
+    // 3. Max Price Filter
+    const parsedMaxPrice = maxPrice.trim() !== "" ? Number(maxPrice) : NaN;
+    if (!isNaN(parsedMaxPrice)) {
+      if (deal.price > parsedMaxPrice) return false;
+    }
+
+    // 4. Max Mileage Filter
+    const parsedMaxMileage = maxMileage.trim() !== "" ? Number(maxMileage) : NaN;
+    if (!isNaN(parsedMaxMileage)) {
+      if (deal.mileage > parsedMaxMileage) return false;
+    }
+
+    // 5. Fuel Type Filter
+    const searchFuel = fuelFilter.trim().toLowerCase();
+    if (searchFuel.length > 0) {
+      const dealFuel = String(deal.fuelType).toLowerCase();
+      if (!dealFuel.includes(searchFuel)) return false;
+    }
+
+    // 6. Minimum VFM Threshold Validation
+    if (deal.vfmScore < minVfm) return false;
+
+    return true;
   });
 
   return {
@@ -87,15 +133,27 @@ export const useGlobalDeals = () => {
     loading,
     error,
 
-    // filtering UI
-    searchTerm,
-    setSearchTerm,
-    minVfm,
-    setMinVfm,
-
-    // pagination
+    // Pagination
     page,
     setPage,
-    pageSize,
+    pageSizeInput,
+    setPageSizeInput,
+
+    // Actions
+    execute,
+
+    // Column Filters state and modifiers
+    brandFilter,
+    setBrandFilter,
+    modelFilter,
+    setModelFilter,
+    maxPrice,
+    setMaxPrice,
+    maxMileage,
+    setMaxMileage,
+    fuelFilter,
+    setFuelFilter,
+    minVfm,
+    setMinVfm,
   };
 };
