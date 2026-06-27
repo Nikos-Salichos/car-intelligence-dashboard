@@ -102,7 +102,6 @@ export interface FastMovingCarDto {
 export type AvailableCarsMap = Record<string, string[]>;
 
 export interface GlobalDealDto {
-  id: string;
   brand: string;
   model: string;
   price: number;

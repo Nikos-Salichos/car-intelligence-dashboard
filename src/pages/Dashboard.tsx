@@ -1,6 +1,5 @@
-import React, { useState } from "react";
+import React from "react";
 import { useDashboardData } from "../hooks/useDashboardData";
-import { VfmLeaderboard } from "../components/sourcing/VfmLeaderboard";
 import { PricingAdvisor } from "../components/sourcing/PricingAdvisor";
 import { FastInventory } from "../components/sourcing/FastInventory";
 import { MarketAlerts } from "../components/sourcing/MarketAlerts";
@@ -10,16 +9,14 @@ import { FuelMarketShare } from "../components/analytics/FuelMarketShare";
 import { GeoDistribution } from "../components/analytics/GeoDistribution";
 import { ScraperHealth } from "../components/health/ScraperHealth";
 
-import type { VfmLeaderboardDto, CompetitionAnalysisDto, FuelMarketShareDto, GeographicDistributionDto, ScraperHealthDto, MarketAlertDto, BulkDepreciationDto, FastMovingCarDto, AvailableCarsMap } from "../types";
+import type { CompetitionAnalysisDto, FuelMarketShareDto, GeographicDistributionDto, ScraperHealthDto, MarketAlertDto, BulkDepreciationDto, FastMovingCarDto, AvailableCarsMap } from "../types";
 
 export const Dashboard: React.FC = () => {
-  const [executedScore, setExecutedScore] = useState<number>(80);
-
-  const dashboard = useDashboardData(executedScore) as unknown as {
+  // English Comment: Cleaned Hook injection completely detached from VFM leaderboard metrics
+  const dashboard = useDashboardData() as unknown as {
     loading: boolean;
     error: string | null;
 
-    vfmLeaderboard: VfmLeaderboardDto[];
     competition: CompetitionAnalysisDto[];
     fuelShare: FuelMarketShareDto[];
     geoDistribution: GeographicDistributionDto[];
@@ -33,7 +30,7 @@ export const Dashboard: React.FC = () => {
     availableCars: AvailableCarsMap | Map<string, string[]>;
   };
 
-  const { loading, error, vfmLeaderboard, competition, fuelShare, geoDistribution, scraperHealth, marketAlerts, bulkDepreciation, fastInventory, availableCars } = dashboard;
+  const { loading, error, competition, fuelShare, geoDistribution, scraperHealth, marketAlerts, bulkDepreciation, fastInventory, availableCars } = dashboard;
 
   if (error) {
     return (
@@ -83,20 +80,17 @@ export const Dashboard: React.FC = () => {
         </div>
       )}
 
+      {/* English Comment: Refactored top section layout grid to align standalone pricing and alert layers seamlessly */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "2fr 1fr",
+          gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))",
           gap: "2rem",
           marginBottom: "2rem",
         }}
       >
-        <VfmLeaderboard data={vfmLeaderboard} initialMinScore={executedScore} onExecute={setExecutedScore} isLoading={loading} />
-
-        <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
-          <PricingAdvisor carsMap={carsMap} />
-          <MarketAlerts data={marketAlerts} />
-        </div>
+        <PricingAdvisor carsMap={carsMap} />
+        <MarketAlerts data={marketAlerts} />
       </div>
 
       <div
