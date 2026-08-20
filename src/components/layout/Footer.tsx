@@ -1,9 +1,9 @@
-import React from 'react';
+import React from "react";
 
 export const Footer: React.FC = () => {
   return (
-    <footer style={{ textAlign: 'center', padding: '1.5rem', backgroundColor: '#111', color: '#666', borderTop: '1px solid #222', marginTop: '2rem' }}>
-      <p style={{ margin: 0, fontSize: '0.9rem' }}>CarScanner Ecosystem Hub © 2026 Engine Nodes. Automated Pipeline Token Session Active.</p>
+    <footer className="bg-gray-950 border-t border-gray-900 px-6 py-3 text-center text-xs text-gray-500">
+      <p className="m-0">CarScanner Hub © 2026 Engine Nodes · Session Active</p>
     </footer>
   );
 };
