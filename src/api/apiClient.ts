@@ -38,20 +38,52 @@ apiClient.interceptors.request.use(
   },
 );
 
-// English Comment: Interceptor to catch and log responses or authorization errors clearly
+// English Comment: Interceptor to catch 401s and handle automatic refresh token rotation
 apiClient.interceptors.response.use(
   (res) => {
     console.log("[API RESPONSE]", res.config.url, res.status);
     return res;
   },
-  (err) => {
-    console.error("[API ERROR]", err?.response?.data || err.message);
+  async (err) => {
+    const originalRequest = err.config;
 
-    // English Comment: Optional global handling for expired or missing tokens (401 Unauthorized)
-    if (err.response?.status === 401) {
-      console.warn("Unauthorized request detected. Redirecting to login or clearing state...");
+    if (err.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        const token = localStorage.getItem("token");
+        const refreshToken = localStorage.getItem("refreshToken");
+
+        if (!token || !refreshToken) {
+          throw new Error("No tokens available");
+        }
+
+        // English Comment: Request new access token using current refresh token
+        const res = await axios.post(`${BASE_URL}/Auth/refresh`, {
+          token,
+          refreshToken,
+        });
+
+        if (res.status === 200) {
+          localStorage.setItem("token", res.data.token);
+          localStorage.setItem("refreshToken", res.data.refreshToken);
+
+          apiClient.defaults.headers.common["Authorization"] = `Bearer ${res.data.token}`;
+          originalRequest.headers["Authorization"] = `Bearer ${res.data.token}`;
+
+          return apiClient(originalRequest);
+        }
+      } catch (refreshError) {
+        // English Comment: Session completely expired or canceled; clear state and direct user to login
+        console.warn("Session expired or revoked. Redirecting to login...");
+        localStorage.removeItem("token");
+        localStorage.removeItem("refreshToken");
+        window.location.href = "/login";
+        return Promise.reject(refreshError);
+      }
     }
 
+    console.error("[API ERROR]", err?.response?.data || err.message);
     return Promise.reject(err);
   },
 );

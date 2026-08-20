@@ -1,9 +1,32 @@
-import React from "react";
+interface FooterProps {
+  onOpenTerms: () => void;
+  onOpenPrivacy: () => void;
+}
 
-export const Footer: React.FC = () => {
+export function Footer({ onOpenTerms, onOpenPrivacy }: FooterProps) {
   return (
-    <footer className="bg-gray-950 border-t border-gray-900 px-6 py-3 text-center text-xs text-gray-500">
-      <p className="m-0">CarScanner Hub © 2026 Engine Nodes · Session Active</p>
+    <footer className="w-full bg-[#121215] border-t border-zinc-800 text-zinc-400 py-6 px-4 mt-auto">
+      <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm">
+        <div>
+          <p>© {new Date().getFullYear()} AutoAggregator. All rights reserved.</p>
+        </div>
+
+        <div className="flex items-center gap-6">
+          <button
+            onClick={onOpenTerms}
+            className="hover:text-white transition-colors underline-offset-4 hover:underline"
+          >
+            Όροι &amp; Προϋποθέσεις
+          </button>
+
+          <button
+            onClick={onOpenPrivacy}
+            className="hover:text-white transition-colors underline-offset-4 hover:underline"
+          >
+            Πολιτική Απορρήτου
+          </button>
+        </div>
+      </div>
     </footer>
   );
-};
+}
