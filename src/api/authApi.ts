@@ -28,4 +28,24 @@ export const authApi = {
       window.location.href = "/login";
     }
   },
+
+  refreshToken: async (email: string) => {
+    const currentRefreshToken = localStorage.getItem("refreshToken");
+
+    // English Comment: Send email and existing refresh token to revoke/rotate and acquire new access token
+    const { data } = await apiClient.post("/Auth/refresh", {
+      email,
+      refreshToken: currentRefreshToken,
+    });
+
+    if (data.token) {
+      localStorage.setItem("token", data.token);
+    }
+
+    if (data.refreshToken) {
+      localStorage.setItem("refreshToken", data.refreshToken);
+    }
+
+    return data;
+  },
 };

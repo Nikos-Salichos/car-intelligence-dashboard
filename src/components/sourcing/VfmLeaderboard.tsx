@@ -12,11 +12,14 @@ import {
 } from "ag-grid-community";
 import { VfmLeaderboardDto } from "../../types";
 
-// English Comment: Register AG Grid Community modules and validation
+// English Comment: Register AG Grid Community modules and validation once at module root scope
 ModuleRegistry.registerModules([
   AllCommunityModule,
   ValidationModule
 ]);
+
+// English Comment: Define theme outside the component scope to avoid recreate overhead on re-renders
+const myTheme = themeQuartz.withPart(colorSchemeDark);
 
 interface Props {
   data: VfmLeaderboardDto[];
@@ -59,11 +62,6 @@ export const VfmLeaderboard: React.FC<Props> = ({
   const [toolbarHeight, setToolbarHeight] = useState<number>(56);
 
   const isMobile = useIsMobile(768);
-
-  // English Comment: Configure dark Quartz theme via modern v33+ Theming API
-  const myTheme = useMemo(() => {
-    return themeQuartz.withPart(colorSchemeDark);
-  }, []);
 
   // English Comment: Close column dropdown menu when clicking outside
   useEffect(() => {
@@ -171,14 +169,10 @@ export const VfmLeaderboard: React.FC<Props> = ({
       valueGetter: (params) => `${params.data?.brand || ""} ${params.data?.model || ""}`,
       cellRenderer: (params: any) => (
         <div className="flex items-center gap-2 h-full">
+          {/* Main text container displaying brand and model */}
           <span className="font-bold text-white tracking-wide">
             {params.data?.brand} {params.data?.model}
           </span>
-          {params.data?.carYear && (
-            <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-gray-800 text-gray-200 border border-gray-700">
-              {params.data.carYear}
-            </span>
-          )}
         </div>
       ),
       filter: "agTextColumnFilter",

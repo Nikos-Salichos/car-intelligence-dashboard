@@ -11,26 +11,38 @@ export const useVfmLeaderboardData = (initialMinScore: number = 0.0) => {
     const [vfmLeaderboard, setVfmLeaderboard] = useState<T.VfmLeaderboardDto[]>([]);
 
     useEffect(() => {
+        let isCancelled = false;
+
         const fetchLeaderboardData = async () => {
             setLoading(true);
             try {
                 // English Comment: Executing the specialized API pipeline for the leaderboard with standard retry logic
                 const data = await withRetry(() => dashboardApi.getVfmLeaderboard(minScore));
-                setVfmLeaderboard(data);
-                setError(null);
+                if (!isCancelled) {
+                    setVfmLeaderboard(data);
+                    setError(null);
+                }
             } catch (err: unknown) {
-                // English Comment: Standard catch boundary fallback for unexpected request failures
-                const errorMessage =
-                    err instanceof Error
-                        ? err.message
-                        : "An unexpected error occurred while fetching the leaderboard metrics.";
-                setError(errorMessage);
+                if (!isCancelled) {
+                    // English Comment: Standard catch boundary fallback for unexpected request failures
+                    const errorMessage =
+                        err instanceof Error
+                            ? err.message
+                            : "An unexpected error occurred while fetching the leaderboard metrics.";
+                    setError(errorMessage);
+                }
             } finally {
-                setLoading(false);
+                if (!isCancelled) {
+                    setLoading(false);
+                }
             }
         };
 
         fetchLeaderboardData();
+
+        return () => {
+            isCancelled = true;
+        };
     }, [minScore]);
 
     return {
