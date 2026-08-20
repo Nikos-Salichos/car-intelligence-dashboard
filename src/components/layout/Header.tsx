@@ -10,7 +10,7 @@ export const Header: React.FC<HeaderProps> = ({ onLogout }) => {
       <div className="flex items-center gap-3">
         <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse" />
         <span className="font-extrabold tracking-tight text-sm text-white">
-          CARSCANNER <span className="text-gray-400 font-medium ml-1">ENGINE</span>
+          Car Market Intelligence
         </span>
       </div>
       <button
