@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState } from "react";
+import React, { useMemo, useCallback, useState, useRef, useEffect } from "react";
 import { AgGridReact } from "ag-grid-react";
 import {
   ColDef,
@@ -29,29 +29,78 @@ export const VfmLeaderboard: React.FC<Props> = ({
   data,
   isLoading = false,
 }) => {
-  // English Comment: Reference to store Grid API instance for programmatically clearing filters
   const [gridApi, setGridApi] = useState<GridApi<VfmLeaderboardDto> | null>(null);
+  const [isColumnMenuOpen, setIsColumnMenuOpen] = useState<boolean>(false);
+  const [columnsState, setColumnsState] = useState<{ id: string; headerName: string; hide: boolean }[]>([]);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // English Comment: Configure dark Quartz theme via modern v33+ Theming API
   const myTheme = useMemo(() => {
     return themeQuartz.withPart(colorSchemeDark);
   }, []);
 
-  // English Comment: Save Grid API reference on grid initialization
-  const onGridReady = useCallback((params: GridReadyEvent<VfmLeaderboardDto>) => {
-    setGridApi(params.api);
+  // English Comment: Close column dropdown menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsColumnMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // English Comment: Handler to reset all column filters and global searches in AG Grid
+  // English Comment: Update column visibility state for the UI menu
+  const syncColumnState = useCallback((api: GridApi<VfmLeaderboardDto>) => {
+    const colDefs = api.getColumnDefs() || [];
+    const colState = api.getColumnState();
+
+    const mappedCols = colState.map((col) => {
+      const colDef = colDefs.find((c) => (c as ColDef).field === col.colId || (c as ColDef).colId === col.colId) as ColDef;
+      return {
+        id: col.colId,
+        headerName: (colDef?.headerName as string) || col.colId,
+        hide: !!col.hide,
+      };
+    });
+
+    setColumnsState(mappedCols);
+  }, []);
+
+  // English Comment: Save Grid API reference on grid initialization and initial column sync
+  const onGridReady = useCallback((params: GridReadyEvent<VfmLeaderboardDto>) => {
+    setGridApi(params.api);
+    syncColumnState(params.api);
+  }, [syncColumnState]);
+
+  // English Comment: Handler to reset all column filters
   const handleClearFilters = useCallback(() => {
     if (gridApi) {
       gridApi.setFilterModel(null);
     }
   }, [gridApi]);
 
-  // English Comment: Column definitions with full seller address preservation
+  // English Comment: Fix for AG Grid v36+ using setColumnsVisible with array input
+  const toggleColumnVisibility = useCallback((colId: string, currentHide: boolean) => {
+    if (gridApi) {
+      gridApi.setColumnsVisible([colId], currentHide);
+      syncColumnState(gridApi);
+    }
+  }, [gridApi, syncColumnState]);
+
+  // English Comment: Reset column visibility to initial setup (default visible vs hidden columns)
+  const handleResetColumnVisibility = useCallback(() => {
+    if (gridApi) {
+      gridApi.resetColumnState();
+      syncColumnState(gridApi);
+    }
+  }, [gridApi, syncColumnState]);
+
+  // English Comment: Complete column definitions mapping all VfmLeaderboardDto properties
   const columnDefs = useMemo<ColDef<VfmLeaderboardDto>[]>(() => [
+    // --- VISIBLE BY DEFAULT ---
     {
+      colId: "assetModel",
       headerName: "ASSET / MODEL",
       valueGetter: (params) => `${params.data?.brand || ""} ${params.data?.model || ""}`,
       cellRenderer: (params: any) => (
@@ -72,6 +121,7 @@ export const VfmLeaderboard: React.FC<Props> = ({
       flex: 1.5,
     },
     {
+      colId: "price",
       headerName: "CURRENT PRICE",
       field: "price",
       cellRenderer: (params: any) => {
@@ -95,6 +145,7 @@ export const VfmLeaderboard: React.FC<Props> = ({
       flex: 1,
     },
     {
+      colId: "originalPriceEuros",
       headerName: "ORIGINAL MSRP",
       field: "originalPriceEuros",
       cellRenderer: (params: any) => (
@@ -114,6 +165,7 @@ export const VfmLeaderboard: React.FC<Props> = ({
       flex: 1,
     },
     {
+      colId: "mileage",
       headerName: "MILEAGE",
       field: "mileage",
       cellRenderer: (params: any) => (
@@ -127,6 +179,7 @@ export const VfmLeaderboard: React.FC<Props> = ({
       flex: 1,
     },
     {
+      colId: "specsFuel",
       headerName: "SPECS & FUEL",
       valueGetter: (params) =>
         `${params.data?.fuelType || ""} ${params.data?.engineCc ? `(${params.data.engineCc} cc)` : ""}`,
@@ -143,9 +196,10 @@ export const VfmLeaderboard: React.FC<Props> = ({
       flex: 1,
     },
     {
+      colId: "addressSeller",
       headerName: "SELLER ADDRESS",
       field: "addressSeller",
-      // English Comment: Preserving complete seller address display
+      // English Comment: Keeping full seller address explicit with strong white/light typography
       cellRenderer: (params: any) => (
         <div className="flex items-center h-full">
           <span className="text-gray-200 text-xs font-normal whitespace-normal leading-normal" title={params.value}>
@@ -158,6 +212,7 @@ export const VfmLeaderboard: React.FC<Props> = ({
       flex: 2,
     },
     {
+      colId: "vfmScore",
       headerName: "VFM SCORE",
       field: "vfmScore",
       cellRenderer: (params: any) => (
@@ -173,7 +228,122 @@ export const VfmLeaderboard: React.FC<Props> = ({
       minWidth: 110,
       flex: 0.9,
     },
+
+    // --- HIDDEN BY DEFAULT (AVAILABLE IN COLUMNS MENU) ---
     {
+      colId: "brand",
+      headerName: "BRAND",
+      field: "brand",
+      hide: true,
+      filter: "agTextColumnFilter",
+      sortable: true,
+      minWidth: 120,
+    },
+    {
+      colId: "model",
+      headerName: "MODEL",
+      field: "model",
+      hide: true,
+      filter: "agTextColumnFilter",
+      sortable: true,
+      minWidth: 120,
+    },
+    {
+      colId: "carYear",
+      headerName: "YEAR",
+      field: "carYear",
+      hide: true,
+      filter: "agNumberColumnFilter",
+      sortable: true,
+      minWidth: 100,
+    },
+    {
+      colId: "priceDiscountOrIncreasePct",
+      headerName: "DISCOUNT %",
+      field: "priceDiscountOrIncreasePct",
+      hide: true,
+      cellRenderer: (params: any) => (
+        <span className="text-xs font-bold text-emerald-400">
+          {params.value !== undefined && params.value !== null ? `${params.value}%` : "—"}
+        </span>
+      ),
+      filter: "agNumberColumnFilter",
+      sortable: true,
+      minWidth: 120,
+    },
+    {
+      colId: "engineCc",
+      headerName: "ENGINE (CC or KW)",
+      field: "engineCc",
+      hide: true,
+      filter: "agNumberColumnFilter",
+      sortable: true,
+      minWidth: 120,
+    },
+    {
+      colId: "fuelType",
+      headerName: "FUEL TYPE",
+      field: "fuelType",
+      hide: true,
+      filter: "agTextColumnFilter",
+      sortable: true,
+      minWidth: 120,
+    },
+    {
+      colId: "sellerType",
+      headerName: "SELLER TYPE",
+      field: "sellerType",
+      hide: true,
+      filter: "agTextColumnFilter",
+      sortable: true,
+      minWidth: 130,
+    },
+    {
+      colId: "avgCategoryPrice",
+      headerName: "AVG CAT. PRICE",
+      field: "avgCategoryPrice",
+      hide: true,
+      cellRenderer: (params: any) => (
+        <span className="text-xs text-gray-300 font-medium">
+          {params.value ? `€${params.value.toLocaleString()}` : "—"}
+        </span>
+      ),
+      filter: "agNumberColumnFilter",
+      sortable: true,
+      minWidth: 140,
+    },
+    {
+      colId: "avgCategoryMileage",
+      headerName: "AVG CAT. MILEAGE",
+      field: "avgCategoryMileage",
+      hide: true,
+      cellRenderer: (params: any) => (
+        <span className="text-xs text-gray-300 font-medium">
+          {params.value ? `${params.value.toLocaleString()} km` : "—"}
+        </span>
+      ),
+      filter: "agNumberColumnFilter",
+      sortable: true,
+      minWidth: 150,
+    },
+    {
+      colId: "createdAt",
+      headerName: "CREATED AT",
+      field: "createdAt",
+      hide: true,
+      cellRenderer: (params: any) => (
+        <span className="text-xs text-gray-400">
+          {params.value ? new Date(params.value).toLocaleDateString() : "—"}
+        </span>
+      ),
+      filter: "agDateColumnFilter",
+      sortable: true,
+      minWidth: 130,
+    },
+
+    // --- ACTION BUTTON (ALWAYS VISIBLE) ---
+    {
+      colId: "action",
       headerName: "ACTION",
       field: "listingUrl",
       cellRenderer: (params: any) => (
@@ -208,7 +378,7 @@ export const VfmLeaderboard: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Header Toolbar with Clear Filters Button */}
+      {/* Header Toolbar */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <h1 className="text-lg font-bold tracking-tight text-white">VFM Leaderboard</h1>
@@ -217,27 +387,74 @@ export const VfmLeaderboard: React.FC<Props> = ({
           </span>
         </div>
 
-        {/* Clear Filters Action */}
-        <button
-          onClick={handleClearFilters}
-          className="inline-flex items-center gap-1.5 bg-gray-900 hover:bg-gray-800 text-gray-300 hover:text-white font-semibold text-xs px-3 py-1.5 rounded border border-gray-800 hover:border-gray-700 transition-all shadow-sm"
-          title="Reset all column filters"
-        >
-          <svg
-            className="w-3.5 h-3.5 text-gray-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+        {/* Action Controls */}
+        <div className="flex items-center gap-2">
+          {/* Columns Visibility Dropdown */}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setIsColumnMenuOpen(!isColumnMenuOpen)}
+              className="inline-flex items-center gap-1.5 bg-gray-900 hover:bg-gray-800 text-gray-300 hover:text-white font-semibold text-xs px-3 py-1.5 rounded border border-gray-800 hover:border-gray-700 transition-all shadow-sm"
+            >
+              <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              Columns
+            </button>
+
+            {isColumnMenuOpen && (
+              <div className="absolute right-0 mt-2 w-60 bg-gray-900 border border-gray-800 rounded-lg shadow-xl z-50 p-2">
+                <div className="flex items-center justify-between pb-2 mb-2 border-b border-gray-800 px-1">
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Visible Columns</span>
+                  <button
+                    onClick={handleResetColumnVisibility}
+                    className="text-[11px] text-blue-400 hover:text-blue-300 font-semibold"
+                  >
+                    Reset Default
+                  </button>
+                </div>
+                <div className="flex flex-col gap-1 max-h-64 overflow-y-auto pr-1">
+                  {columnsState.map((col) => (
+                    <label
+                      key={col.id}
+                      className="flex items-center justify-between px-2 py-1 rounded hover:bg-gray-800 cursor-pointer text-xs text-gray-200 transition-colors"
+                    >
+                      <span>{col.headerName}</span>
+                      <input
+                        type="checkbox"
+                        checked={!col.hide}
+                        onChange={() => toggleColumnVisibility(col.id, col.hide)}
+                        className="rounded bg-gray-950 border-gray-700 text-blue-600 focus:ring-0 cursor-pointer"
+                      />
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Clear Filters Button */}
+          <button
+            onClick={handleClearFilters}
+            className="inline-flex items-center gap-1.5 bg-gray-900 hover:bg-gray-800 text-gray-300 hover:text-white font-semibold text-xs px-3 py-1.5 rounded border border-gray-800 hover:border-gray-700 transition-all shadow-sm"
+            title="Reset all column filters"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-          Clear Filters
-        </button>
+            <svg
+              className="w-3.5 h-3.5 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+            Clear Filters
+          </button>
+        </div>
       </div>
 
       {/* AG Grid Component */}
