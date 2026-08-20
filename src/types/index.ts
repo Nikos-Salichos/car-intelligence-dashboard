@@ -14,14 +14,21 @@ export interface LoginResponse {
 export interface VfmLeaderboardDto {
   brand: string;
   model: string;
+  carYear?: number;
+  originalPriceEuros: number;
   price: number;
+  priceDiscountOrIncreasePct: number;
   mileage: number;
+  engineCc: number;
+  listingUrl: string;
+  sellerType: string;
   fuelType: string;
   addressSeller: string;
-  listingUrl: string;
-  marketListings: number;
-  priceScore: number;
-  mileageScore: number;
+  createdAt: string;
+  lastSeenAt: string;
+  isActive: boolean;
+  avgCategoryPrice: number;
+  avgCategoryMileage: number;
   vfmScore: number;
 }
 
