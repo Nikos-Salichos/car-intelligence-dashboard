@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useCallback, useState } from "react";
 import { AgGridReact } from "ag-grid-react";
 import {
   ColDef,
@@ -6,7 +6,9 @@ import {
   AllCommunityModule,
   ValidationModule,
   themeQuartz,
-  colorSchemeDark
+  colorSchemeDark,
+  GridApi,
+  GridReadyEvent
 } from "ag-grid-community";
 import { VfmLeaderboardDto } from "../../types";
 
@@ -27,12 +29,27 @@ export const VfmLeaderboard: React.FC<Props> = ({
   data,
   isLoading = false,
 }) => {
-  // English Comment: Configure dark Quartz theme via the modern v33+ Theming API
+  // English Comment: Reference to store Grid API instance for programmatically clearing filters
+  const [gridApi, setGridApi] = useState<GridApi<VfmLeaderboardDto> | null>(null);
+
+  // English Comment: Configure dark Quartz theme via modern v33+ Theming API
   const myTheme = useMemo(() => {
     return themeQuartz.withPart(colorSchemeDark);
   }, []);
 
-  // English Comment: High contrast column definitions with full seller address visibility
+  // English Comment: Save Grid API reference on grid initialization
+  const onGridReady = useCallback((params: GridReadyEvent<VfmLeaderboardDto>) => {
+    setGridApi(params.api);
+  }, []);
+
+  // English Comment: Handler to reset all column filters and global searches in AG Grid
+  const handleClearFilters = useCallback(() => {
+    if (gridApi) {
+      gridApi.setFilterModel(null);
+    }
+  }, [gridApi]);
+
+  // English Comment: Column definitions with full seller address preservation
   const columnDefs = useMemo<ColDef<VfmLeaderboardDto>[]>(() => [
     {
       headerName: "ASSET / MODEL",
@@ -128,7 +145,7 @@ export const VfmLeaderboard: React.FC<Props> = ({
     {
       headerName: "SELLER ADDRESS",
       field: "addressSeller",
-      // English Comment: Preserving complete seller address display without trimming
+      // English Comment: Preserving complete seller address display
       cellRenderer: (params: any) => (
         <div className="flex items-center h-full">
           <span className="text-gray-200 text-xs font-normal whitespace-normal leading-normal" title={params.value}>
@@ -191,7 +208,7 @@ export const VfmLeaderboard: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Simplified Header Toolbar */}
+      {/* Header Toolbar with Clear Filters Button */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <h1 className="text-lg font-bold tracking-tight text-white">VFM Leaderboard</h1>
@@ -199,15 +216,38 @@ export const VfmLeaderboard: React.FC<Props> = ({
             {data.length} listings
           </span>
         </div>
+
+        {/* Clear Filters Action */}
+        <button
+          onClick={handleClearFilters}
+          className="inline-flex items-center gap-1.5 bg-gray-900 hover:bg-gray-800 text-gray-300 hover:text-white font-semibold text-xs px-3 py-1.5 rounded border border-gray-800 hover:border-gray-700 transition-all shadow-sm"
+          title="Reset all column filters"
+        >
+          <svg
+            className="w-3.5 h-3.5 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+          Clear Filters
+        </button>
       </div>
 
-      {/* AG Grid Component with Modern Theme API */}
+      {/* AG Grid Component */}
       <div className="w-full h-[calc(100vh-170px)] rounded-lg border border-gray-800 bg-gray-950 overflow-hidden shadow-2xl">
         <AgGridReact
           theme={myTheme}
           rowData={data}
           columnDefs={columnDefs}
           defaultColDef={defaultColDef}
+          onGridReady={onGridReady}
           pagination={true}
           paginationPageSize={25}
           paginationPageSizeSelector={[25, 50, 100]}
