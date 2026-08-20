@@ -101,7 +101,7 @@ export const VfmLeaderboard: React.FC<Props> = ({
     // --- VISIBLE BY DEFAULT ---
     {
       colId: "assetModel",
-      headerName: "ASSET / MODEL",
+      headerName: "BRAND MODEL",
       valueGetter: (params) => `${params.data?.brand || ""} ${params.data?.model || ""}`,
       cellRenderer: (params: any) => (
         <div className="flex items-center gap-2 h-full">
@@ -181,16 +181,33 @@ export const VfmLeaderboard: React.FC<Props> = ({
     {
       colId: "specsFuel",
       headerName: "SPECS & FUEL",
-      valueGetter: (params) =>
-        `${params.data?.fuelType || ""} ${params.data?.engineCc ? `(${params.data.engineCc} cc)` : ""}`,
-      cellRenderer: (params: any) => (
-        <div className="flex items-center h-full text-gray-200 text-xs font-medium">
-          {params.data?.fuelType}{" "}
-          {params.data?.engineCc && (
-            <span className="text-gray-400 ml-1">({params.data.engineCc} cc)</span>
-          )}
-        </div>
-      ),
+      valueGetter: (params) => {
+        if (!params.data) return "";
+        const isElectric = params.data.fuelType?.toLowerCase().includes("electric") ||
+          params.data.fuelType?.toLowerCase().includes("ev");
+        const unit = isElectric ? "kW" : "cc";
+        const powerOrCapacity = params.data.engineCc ? `(${params.data.engineCc} ${unit})` : "";
+        return `${params.data.fuelType || ""} ${powerOrCapacity}`.trim();
+      },
+      cellRenderer: (params: any) => {
+        if (!params.data) return <span className="text-gray-600">—</span>;
+
+        // English Comment: Dynamically display kW for electric vehicles and cc for internal combustion engines
+        const isElectric = params.data.fuelType?.toLowerCase().includes("electric") ||
+          params.data.fuelType?.toLowerCase().includes("ev");
+        const unit = isElectric ? "kW" : "cc";
+
+        return (
+          <div className="flex items-center h-full text-gray-200 text-xs font-medium">
+            <span>{params.data.fuelType || "—"}</span>
+            {params.data.engineCc && (
+              <span className="text-gray-400 ml-1">
+                ({params.data.engineCc} {unit})
+              </span>
+            )}
+          </div>
+        );
+      },
       filter: "agTextColumnFilter",
       minWidth: 150,
       flex: 1,
@@ -218,7 +235,7 @@ export const VfmLeaderboard: React.FC<Props> = ({
       cellRenderer: (params: any) => (
         <div className="flex items-center h-full">
           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-black bg-blue-900/90 text-blue-200 border border-blue-600">
-            {params.value?.toFixed(2)}
+            {params.value}
           </span>
         </div>
       ),
@@ -230,65 +247,6 @@ export const VfmLeaderboard: React.FC<Props> = ({
     },
 
     // --- HIDDEN BY DEFAULT (AVAILABLE IN COLUMNS MENU) ---
-    {
-      colId: "brand",
-      headerName: "BRAND",
-      field: "brand",
-      hide: true,
-      filter: "agTextColumnFilter",
-      sortable: true,
-      minWidth: 120,
-    },
-    {
-      colId: "model",
-      headerName: "MODEL",
-      field: "model",
-      hide: true,
-      filter: "agTextColumnFilter",
-      sortable: true,
-      minWidth: 120,
-    },
-    {
-      colId: "carYear",
-      headerName: "YEAR",
-      field: "carYear",
-      hide: true,
-      filter: "agNumberColumnFilter",
-      sortable: true,
-      minWidth: 100,
-    },
-    {
-      colId: "priceDiscountOrIncreasePct",
-      headerName: "DISCOUNT %",
-      field: "priceDiscountOrIncreasePct",
-      hide: true,
-      cellRenderer: (params: any) => (
-        <span className="text-xs font-bold text-emerald-400">
-          {params.value !== undefined && params.value !== null ? `${params.value}%` : "—"}
-        </span>
-      ),
-      filter: "agNumberColumnFilter",
-      sortable: true,
-      minWidth: 120,
-    },
-    {
-      colId: "engineCc",
-      headerName: "ENGINE (CC or KW)",
-      field: "engineCc",
-      hide: true,
-      filter: "agNumberColumnFilter",
-      sortable: true,
-      minWidth: 120,
-    },
-    {
-      colId: "fuelType",
-      headerName: "FUEL TYPE",
-      field: "fuelType",
-      hide: true,
-      filter: "agTextColumnFilter",
-      sortable: true,
-      minWidth: 120,
-    },
     {
       colId: "sellerType",
       headerName: "SELLER TYPE",
