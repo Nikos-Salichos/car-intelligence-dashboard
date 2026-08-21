@@ -155,7 +155,7 @@ export const FairMarketPriceCalculator: React.FC<Props> = ({
                     {/* Highlighted Fair Market Price */}
                     <div className="flex flex-col items-center justify-center bg-gray-950 border border-gray-800 rounded-xl p-6 text-center">
                         <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-                            Δίκαιη Τιμή Αγοράς (Fair Market Price)
+                            ΔΙΚΑΙΗ ΤΙΜΗ ΑΓΟΡΑΣ (Fair Market Price)
                         </span>
                         <div className="text-4xl font-extrabold text-green-400 mt-2">
                             {result.fairMarketPrice.toLocaleString("el-GR")} €
