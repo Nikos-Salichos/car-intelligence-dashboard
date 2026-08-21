@@ -7,4 +7,15 @@ export const dashboardApi = {
     return data;
   },
 
+  getCars: async (): Promise<T.CarDto[]> => {
+    const { data } = await apiClient.get("/Reports/cars");
+    return data;
+  },
+
+  getFairMarketPrice: async (carId: string, userMileage: number): Promise<T.FairMarketPriceDto> => {
+    const { data } = await apiClient.get(
+      `/Reports/fair-market-price?carId=${carId}&userMileage=${userMileage}`
+    );
+    return data;
+  },
 };

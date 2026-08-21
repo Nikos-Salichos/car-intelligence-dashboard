@@ -32,91 +32,19 @@ export interface VfmLeaderboardDto {
   vfmScore: number;
 }
 
-// 🌟 Unified MarketAdvisorDto - combined duplicate entries into a single clean declaration
-export interface MarketAdvisorDto {
+export interface CarDto {
+  id: string;
   brand: string;
   model: string;
-  totalActiveListings: number;
-  averagePrice: number;
-  minimumPrice: number;
-  maximumPrice: number;
-  priceStandardDeviation: number;
-  priceVolatilityPercentage: number;
-  averageMileage: number;
+  originalPriceEuros?: number;
+  originalPriceProvider?: string;
 }
 
-export interface CompetitionAnalysisDto {
+export interface FairMarketPriceDto {
   brand: string;
   model: string;
-  privateListingsCount: number;
-  privateAvgPrice: number | null;
-  dealerListingsCount: number;
-  dealerAvgPrice: number | null;
-  potentialDealerMargin: number;
-}
-
-export interface FuelMarketShareDto {
-  fuelType: string;
-  totalListings: number;
-  marketSharePercentage: number;
-  averagePrice: number;
-}
-
-export interface GeographicDistributionDto {
-  region: string;
-  totalListings: number;
-  averagePrice: number;
-}
-
-export interface ScraperHealthDto {
-  totalTrackedModels: number;
-  activeListingsCount: number;
-  totalCarGrActive: number;
-  totalAutoTritiModels: number;
-  newListingsImportedToday: number;
-}
-
-export interface LookupDataDto {
-  availableFuelTypes: string[];
-  engineCcMinimumRange: number;
-  engineCcMaximumRange: number;
-}
-
-export interface MarketAlertDto {
-  brand: string;
-  model: string;
-  alertCategory: string;
-  unitsAffectedCount: number;
-  generatedMessage: string;
-}
-
-export interface BulkDepreciationDto {
-  brand: string;
-  model: string;
-  samplePoints: number;
-  averagePrice: number;
-  averageMileage: number;
-  priceLossPerTenThousandKm: number;
-}
-
-export interface FastMovingCarDto {
-  brand: string;
-  model: string;
-  totalSoldUnitsSample: number;
-  averageDaysToSell: number;
-}
-
-export type AvailableCarsMap = Record<string, string[]>;
-
-export interface GlobalDealDto {
-  brand: string;
-  model: string;
-  price: number;
-  mileage: number;
-  listingUrl: string;
-  engineCc: number;
-  sellerType: string;
-  fuelType: string;
-  addressSeller: string;
-  vfmScore: number;
+  userMileage: number;
+  marketAvgMileage: number;
+  marketAvgPrice: number;
+  fairMarketPrice: number;
 }
