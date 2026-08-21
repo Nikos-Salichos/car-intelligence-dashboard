@@ -48,3 +48,11 @@ export interface FairMarketPriceDto {
   marketAvgPrice: number;
   fairMarketPrice: number;
 }
+
+export interface ScraperHealthDto {
+  totalTrackedModels: number;
+  activeListingsCount: number;
+  totalCarGrActive: number;
+  totalAutoTritiModels: number;
+  newListingsImportedToday: number;
+}
