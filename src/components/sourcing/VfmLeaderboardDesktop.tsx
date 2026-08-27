@@ -36,10 +36,8 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({
 }) => {
     const [gridApi, setGridApi] =
         useState<GridApi<VfmLeaderboardDto> | null>(null);
-
     const [isColumnMenuOpen, setIsColumnMenuOpen] =
         useState<boolean>(false);
-
     const [columnsState, setColumnsState] = useState<
         {
             id: string;
@@ -47,10 +45,8 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({
             hide: boolean;
         }[]
     >([]);
-
     const dropdownRef = useRef<HTMLDivElement>(null);
     const toolbarRef = useRef<HTMLDivElement>(null);
-
     const [toolbarHeight, setToolbarHeight] =
         useState<number>(56);
 
@@ -66,12 +62,10 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({
                 setIsColumnMenuOpen(false);
             }
         };
-
         document.addEventListener(
             "mousedown",
             handleClickOutside
         );
-
         return () =>
             document.removeEventListener(
                 "mousedown",
@@ -82,18 +76,13 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({
     // English Comment: Dynamically measure toolbar height
     useEffect(() => {
         if (!toolbarRef.current) return;
-
         const element = toolbarRef.current;
-
         const updateHeight = () => {
             setToolbarHeight(element.offsetHeight);
         };
-
         updateHeight();
-
         const resizeObserver = new ResizeObserver(updateHeight);
         resizeObserver.observe(element);
-
         return () => resizeObserver.disconnect();
     }, []);
 
@@ -102,14 +91,12 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({
         (api: GridApi<VfmLeaderboardDto>) => {
             const colDefs = api.getColumnDefs() || [];
             const colState = api.getColumnState();
-
             const mappedCols = colState.map((col) => {
                 const colDef = colDefs.find(
                     (definition) =>
                         (definition as ColDef).field === col.colId ||
                         (definition as ColDef).colId === col.colId
                 ) as ColDef | undefined;
-
                 return {
                     id: col.colId,
                     headerName:
@@ -118,7 +105,6 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({
                     hide: !!col.hide,
                 };
             });
-
             setColumnsState(mappedCols);
         },
         []
@@ -144,7 +130,6 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({
     const toggleColumnVisibility = useCallback(
         (colId: string, currentHide: boolean) => {
             if (!gridApi) return;
-
             gridApi.setColumnsVisible([colId], currentHide);
             syncColumnState(gridApi);
         },
@@ -154,7 +139,6 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({
     // English Comment: Reset column visibility to initial state
     const handleResetColumnVisibility = useCallback(() => {
         if (!gridApi) return;
-
         gridApi.resetColumnState();
         syncColumnState(gridApi);
     }, [gridApi, syncColumnState]);
@@ -189,13 +173,11 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({
                 cellRenderer: (params: any) => {
                     const discount =
                         params.data?.priceDiscountOrIncreasePct;
-
                     return (
                         <div className="flex items-center gap-2 h-full">
                             <span className="text-emerald-400 font-extrabold text-sm">
                                 €{params.data?.price?.toLocaleString()}
                             </span>
-
                             {discount !== undefined &&
                                 discount !== null &&
                                 discount < 0 && (
@@ -252,7 +234,6 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({
                 headerName: "SPECS & FUEL",
                 valueGetter: (params) => {
                     if (!params.data) return "";
-
                     const isElectric =
                         params.data.fuelType
                             ?.toLowerCase()
@@ -260,13 +241,10 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({
                         params.data.fuelType
                             ?.toLowerCase()
                             .includes("ev");
-
                     const unit = isElectric ? "kW" : "cc";
-
                     const powerOrCapacity = params.data.engineCc
                         ? `(${params.data.engineCc} ${unit})`
                         : "";
-
                     return `${params.data.fuelType || ""} ${powerOrCapacity}`.trim();
                 },
                 cellRenderer: (params: any) => {
@@ -275,7 +253,6 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({
                             <span className="text-gray-600">—</span>
                         );
                     }
-
                     const isElectric =
                         params.data.fuelType
                             ?.toLowerCase()
@@ -283,15 +260,12 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({
                         params.data.fuelType
                             ?.toLowerCase()
                             .includes("ev");
-
                     const unit = isElectric ? "kW" : "cc";
-
                     return (
                         <div className="flex items-center h-full text-gray-200 text-xs font-medium">
                             <span>
                                 {params.data.fuelType || "—"}
                             </span>
-
                             {params.data.engineCc && (
                                 <span className="text-gray-400 ml-1">
                                     ({params.data.engineCc} {unit})
@@ -302,6 +276,20 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({
                 },
                 filter: "agTextColumnFilter",
                 minWidth: 150,
+                flex: 1,
+            },
+            {
+                colId: "sellerType",
+                headerName: "SELLER TYPE",
+                field: "sellerType",
+                cellRenderer: (params: any) => (
+                    <div className="flex items-center h-full text-gray-200 text-xs font-medium">
+                        {params.value || "—"}
+                    </div>
+                ),
+                filter: "agTextColumnFilter",
+                sortable: true,
+                minWidth: 130,
                 flex: 1,
             },
             {
@@ -338,15 +326,6 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({
                 sort: "desc",
                 minWidth: 100,
                 flex: 0.9,
-            },
-            {
-                colId: "sellerType",
-                headerName: "SELLER TYPE",
-                field: "sellerType",
-                hide: true,
-                filter: "agTextColumnFilter",
-                sortable: true,
-                minWidth: 130,
             },
             {
                 colId: "avgCategoryPrice",
@@ -442,12 +421,10 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({
                     <h1 className="text-base sm:text-lg font-bold tracking-tight text-white">
                         VFM Leaderboard
                     </h1>
-
                     <span className="px-2.5 py-0.5 rounded text-[11px] font-bold bg-gray-900 text-gray-300 border border-gray-800">
                         {data.length} listings
                     </span>
                 </div>
-
                 {/* Desktop AG Grid Controls */}
                 <div className="flex items-center gap-2">
                     <div
@@ -483,14 +460,12 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({
                             </svg>
                             Columns
                         </button>
-
                         {isColumnMenuOpen && (
                             <div className="absolute right-0 mt-2 w-60 bg-gray-900 border border-gray-800 rounded-lg shadow-xl z-50 p-2">
                                 <div className="flex items-center justify-between pb-2 mb-2 border-b border-gray-800 px-1">
                                     <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
                                         Visible Columns
                                     </span>
-
                                     <button
                                         onClick={
                                             handleResetColumnVisibility
@@ -500,7 +475,6 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({
                                         Reset Default
                                     </button>
                                 </div>
-
                                 <div className="flex flex-col gap-1 max-h-64 overflow-y-auto pr-1">
                                     {columnsState.map((col) => (
                                         <label
@@ -508,7 +482,6 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({
                                             className="flex items-center justify-between px-2 py-1 rounded hover:bg-gray-800 cursor-pointer text-xs text-gray-200 transition-colors"
                                         >
                                             <span>{col.headerName}</span>
-
                                             <input
                                                 type="checkbox"
                                                 checked={!col.hide}
@@ -526,7 +499,6 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({
                             </div>
                         )}
                     </div>
-
                     <button
                         onClick={handleClearFilters}
                         className="inline-flex items-center justify-center gap-1.5 bg-gray-900 hover:bg-gray-800 active:bg-gray-700 text-gray-300 hover:text-white font-semibold text-xs px-3 py-1.5 rounded border border-gray-800 hover:border-gray-700 transition-all shadow-sm"
@@ -545,12 +517,10 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({
                                 d="M6 18L18 6M6 6l12 12"
                             />
                         </svg>
-
                         Clear Filters
                     </button>
                 </div>
             </div>
-
             {/* Desktop AG Grid */}
             <div
                 className="w-full rounded-lg border border-gray-800 bg-gray-950 overflow-hidden shadow-2xl"
