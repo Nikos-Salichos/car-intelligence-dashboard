@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { authApi } from "../api/authApi";
 
 interface Props {
@@ -35,7 +36,7 @@ export const SetupMfaModal: React.FC<Props> = ({ userEmail }) => {
         setError(null);
 
         try {
-            await authApi.enableMfa(userEmail, code);
+            await authApi.enableMfa({ email: userEmail, code });
             setStep("success");
         } catch (err: unknown) {
             console.error("[MFA ENABLE ERROR]", err);
@@ -73,16 +74,22 @@ export const SetupMfaModal: React.FC<Props> = ({ userEmail }) => {
             {step === "scan" && (
                 <form onSubmit={handleEnableMfa} className="space-y-4">
                     <p className="text-xs text-gray-300">
-                        1. Add this secret key manually into your Authenticator App:
+                        1. Scan this QR code with your Authenticator App:
                     </p>
 
-                    <div className="bg-gray-900 border border-gray-700 p-3 rounded-lg font-mono text-center text-amber-400 tracking-wider text-sm select-all">
-                        {secret}
+                    {/* English Comment: Render visual QR code from authenticator URI payload */}
+                    {uri && (
+                        <div className="flex justify-center bg-white p-4 rounded-xl max-w-[200px] mx-auto border border-gray-700 shadow-inner">
+                            <QRCodeSVG value={uri} size={168} level="M" />
+                        </div>
+                    )}
+
+                    <div className="space-y-1 text-center">
+                        <p className="text-xs text-gray-400">Or manually enter key:</p>
+                        <div className="bg-gray-900 border border-gray-700 p-2.5 rounded-lg font-mono text-center text-amber-400 tracking-wider text-xs select-all">
+                            {secret}
+                        </div>
                     </div>
-
-                    <p className="text-xs text-gray-400">
-                        Authenticator URI: <span className="font-mono text-gray-500 break-all">{uri}</span>
-                    </p>
 
                     <div>
                         <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">
