@@ -91,6 +91,7 @@ export interface RegisterPayload {
 export interface VerifyMfaPayload {
   email?: string;
   code: string;
+  preAuthToken?: string;
 }
 
 export interface SetupMfaResponse {
@@ -106,6 +107,8 @@ export interface AuthResponse {
   token?: string;
   refreshToken?: string;
   requiresMfa?: boolean;
+  requiresTwoFactor?: boolean;
+  preAuthToken?: string;
 }
 
 export interface ChangePasswordPayload {
@@ -118,13 +121,36 @@ export interface RefreshTokenPayload {
   refreshToken?: string;
 }
 
+// English Comment: Top-level exported helper functions for direct component consumption
+export const loginUser = async (payload: LoginPayload): Promise<AuthResponse> => {
+  const response = await apiClient.post<AuthResponse>("/Auth/login", payload);
+  return response.data;
+};
+
+export const verifyMfaCode = async (payload: VerifyMfaPayload): Promise<AuthResponse> => {
+  const response = await apiClient.post<AuthResponse>("/Auth/verify-mfa", payload);
+  return response.data;
+};
+
+export const logoutUser = async (userEmail?: string): Promise<void> => {
+  try {
+    const email = userEmail || localStorage.getItem("userEmail");
+    if (email) {
+      await apiClient.post("/Auth/revoke", { email });
+    }
+  } catch (err: unknown) {
+    console.warn("[AUTH LOGOUT] Revoke token failed on server:", err);
+  } finally {
+    localStorage.removeItem("token");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("userEmail");
+  }
+};
+
 // English Comment: Authentication API module containing endpoints for user authentication and MFA operations
 export const authApi = {
   // English Comment: Authenticate user credentials with email and password
-  login: async (payload: LoginPayload): Promise<AuthResponse> => {
-    const response = await apiClient.post<AuthResponse>("/Auth/login", payload);
-    return response.data;
-  },
+  login: loginUser,
 
   // English Comment: Register a new user account
   register: async (payload: RegisterPayload): Promise<AuthResponse> => {
@@ -133,10 +159,7 @@ export const authApi = {
   },
 
   // English Comment: Verify multi-factor authentication code during login process
-  verifyMfa: async (payload: VerifyMfaPayload): Promise<AuthResponse> => {
-    const response = await apiClient.post<AuthResponse>("/Auth/verify-mfa", payload);
-    return response.data;
-  },
+  verifyMfa: verifyMfaCode,
 
   // English Comment: Retrieve MFA activation status for the current authenticated user
   getMfaStatus: async (): Promise<MfaStatusResponse> => {
@@ -170,10 +193,21 @@ export const authApi = {
     await apiClient.post("/Auth/change-password", payload);
   },
 
-  // English Comment: Refresh expired access token using refresh token
-  refreshToken: async (payload?: RefreshTokenPayload): Promise<AuthResponse> => {
-    const token = payload?.token || localStorage.getItem("token") || "";
-    const refreshToken = payload?.refreshToken || localStorage.getItem("refreshToken") || "";
+  // English Comment: Refresh expired access token using refresh token (supports string or RefreshTokenPayload object)
+  refreshToken: async (payload?: string | RefreshTokenPayload): Promise<AuthResponse> => {
+    let token = "";
+    let refreshToken = "";
+
+    if (typeof payload === "string") {
+      token = localStorage.getItem("token") || "";
+      refreshToken = payload;
+    } else if (payload && typeof payload === "object") {
+      token = payload.token || localStorage.getItem("token") || "";
+      refreshToken = payload.refreshToken || localStorage.getItem("refreshToken") || "";
+    } else {
+      token = localStorage.getItem("token") || "";
+      refreshToken = localStorage.getItem("refreshToken") || "";
+    }
 
     const response = await apiClient.post<AuthResponse>("/Auth/refresh", {
       token,
@@ -191,18 +225,5 @@ export const authApi = {
   },
 
   // English Comment: Revoke user token on backend and clear client-side auth state
-  logout: async (userEmail?: string): Promise<void> => {
-    try {
-      const email = userEmail || localStorage.getItem("userEmail");
-      if (email) {
-        await apiClient.post("/Auth/revoke", { email });
-      }
-    } catch (err: unknown) {
-      console.warn("[AUTH LOGOUT] Revoke token failed on server:", err);
-    } finally {
-      localStorage.removeItem("token");
-      localStorage.removeItem("refreshToken");
-      localStorage.removeItem("userEmail");
-    }
-  },
+  logout: logoutUser,
 };
