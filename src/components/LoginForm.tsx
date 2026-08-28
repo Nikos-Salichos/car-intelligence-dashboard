@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { authApi } from "../api/authApi";
 
 interface Props {
@@ -12,10 +12,25 @@ export const LoginForm: React.FC<Props> = ({ onSuccess }) => {
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
-    // English Comment: State management for Multi-Factor Authentication flow
-    const [requiresMfa, setRequiresMfa] = useState<boolean>(false);
-    const [preAuthToken, setPreAuthToken] = useState<string>("");
+    // English Comment: Persist MFA state across component unmounts using sessionStorage
+    const [requiresMfa, setRequiresMfa] = useState<boolean>(() => {
+        return Boolean(sessionStorage.getItem("mfa_pre_auth_token"));
+    });
+
+    const [preAuthToken, setPreAuthToken] = useState<string>(() => {
+        return sessionStorage.getItem("mfa_pre_auth_token") || "";
+    });
+
     const [mfaCode, setMfaCode] = useState<string>("");
+
+    // English Comment: Keep sessionStorage in sync with preAuthToken state
+    useEffect(() => {
+        if (preAuthToken) {
+            sessionStorage.setItem("mfa_pre_auth_token", preAuthToken);
+        } else {
+            sessionStorage.removeItem("mfa_pre_auth_token");
+        }
+    }, [preAuthToken]);
 
     const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -27,9 +42,10 @@ export const LoginForm: React.FC<Props> = ({ onSuccess }) => {
             const response = await authApi.login({ email, password });
 
             if (response.requiresTwoFactor && response.preAuthToken) {
-                setRequiresMfa(true);
                 setPreAuthToken(response.preAuthToken);
+                setRequiresMfa(true);
             } else if (response.token) {
+                sessionStorage.removeItem("mfa_pre_auth_token");
                 onSuccess(response.token);
             } else {
                 setError("Invalid credentials or response payload from Auth API.");
@@ -44,6 +60,7 @@ export const LoginForm: React.FC<Props> = ({ onSuccess }) => {
 
     const handleMfaSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        e.stopPropagation(); // English Comment: Prevent event bubbling to parent containers
         setLoading(true);
         setError(null);
 
@@ -52,15 +69,15 @@ export const LoginForm: React.FC<Props> = ({ onSuccess }) => {
             const response = await authApi.verifyMfa({ preAuthToken, code: mfaCode });
 
             if (response && response.token) {
+                sessionStorage.removeItem("mfa_pre_auth_token");
                 onSuccess(response.token);
             } else {
-                // English Comment: Reset code and set error while strictly keeping requiresMfa as true
                 setMfaCode("");
                 setError("Verification failed. Please double-check your code.");
             }
         } catch (err: unknown) {
             console.error("[MFA VERIFY ERROR]", err);
-            // English Comment: Retain MFA screen on exception and clear input code
+            // English Comment: Retain MFA state on error and present inline alert
             setMfaCode("");
             setError("Invalid or expired authentication code. Please try again.");
         } finally {
@@ -69,7 +86,8 @@ export const LoginForm: React.FC<Props> = ({ onSuccess }) => {
     };
 
     const resetToLogin = () => {
-        // English Comment: Completely reset authentication and MFA states when returning to credentials form
+        // English Comment: Completely clear MFA session cache and return to login view
+        sessionStorage.removeItem("mfa_pre_auth_token");
         setRequiresMfa(false);
         setPreAuthToken("");
         setMfaCode("");
