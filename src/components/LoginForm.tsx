@@ -51,16 +51,16 @@ export const LoginForm: React.FC<Props> = ({ onSuccess }) => {
             // English Comment: Validate TOTP verification code using pre-authentication token
             const response = await authApi.verifyMfa({ preAuthToken, code: mfaCode });
 
-            if (response.token) {
+            if (response && response.token) {
                 onSuccess(response.token);
             } else {
-                // English Comment: Reset invalid MFA code while retaining error state and screen context
+                // English Comment: Reset code and set error while strictly keeping requiresMfa as true
                 setMfaCode("");
                 setError("Verification failed. Please double-check your code.");
             }
         } catch (err: unknown) {
             console.error("[MFA VERIFY ERROR]", err);
-            // English Comment: Reset code input on exception so user can immediately retry
+            // English Comment: Retain MFA screen on exception and clear input code
             setMfaCode("");
             setError("Invalid or expired authentication code. Please try again.");
         } finally {
@@ -69,9 +69,11 @@ export const LoginForm: React.FC<Props> = ({ onSuccess }) => {
     };
 
     const resetToLogin = () => {
+        // English Comment: Completely reset authentication and MFA states when returning to credentials form
         setRequiresMfa(false);
         setPreAuthToken("");
         setMfaCode("");
+        setPassword("");
         setError(null);
     };
 
@@ -103,7 +105,7 @@ export const LoginForm: React.FC<Props> = ({ onSuccess }) => {
 
                 {!requiresMfa ? (
                     /* English Comment: Form interface for standard email/password authentication */
-                    <form onSubmit={handleLoginSubmit} className="space-y-5">
+                    <form key="login-form" onSubmit={handleLoginSubmit} className="space-y-5">
                         <div>
                             <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
                                 Email Address
@@ -172,7 +174,7 @@ export const LoginForm: React.FC<Props> = ({ onSuccess }) => {
                     </form>
                 ) : (
                     /* English Comment: Form interface for 2FA TOTP verification */
-                    <form onSubmit={handleMfaSubmit} className="space-y-5">
+                    <form key="mfa-form" onSubmit={handleMfaSubmit} className="space-y-5">
                         <div>
                             <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
                                 6-Digit Authenticator Code
