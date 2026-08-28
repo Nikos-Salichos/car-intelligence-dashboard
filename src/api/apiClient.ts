@@ -6,14 +6,10 @@ export const apiClient = axios.create({
   baseURL: BASE_URL,
   headers: {
     "Content-Type": "application/json",
-    // English Comment: Prevent browser-level caching of dynamic report datasets
-    "Cache-Control": "no-cache, no-store, must-revalidate",
-    Pragma: "no-cache",
-    Expires: "0",
   },
 });
 
-// English Comment: Interceptor to attach token automatically & bust aggressive intermediate proxies safely
+// English Comment: Attach stored JWT bearer token to outgoing HTTP requests
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
@@ -22,23 +18,15 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // English Comment: Use pure HTTP Headers for cache-busting instead of URL params to prevent backend 500 mapping errors
-    if (config.method === "get" || config.method === "GET") {
-      if (config.headers) {
-        config.headers["If-Modified-Since"] = "0";
-        config.headers["X-Cache-Bust"] = Date.now().toString(); // English Comment: Custom header instead of query param (_t)
-      }
-    }
-
     console.log("[API REQUEST]", config.url, config.method);
     return config;
   },
   (error) => {
     return Promise.reject(error);
-  },
+  }
 );
 
-// English Comment: Interceptor to catch 401s and handle automatic refresh token rotation
+// English Comment: Handle token refresh rotation on 401 response matching RefreshTokenDto(string Token, string RefreshToken)
 apiClient.interceptors.response.use(
   (res) => {
     console.log("[API RESPONSE]", res.config.url, res.status);
@@ -58,13 +46,13 @@ apiClient.interceptors.response.use(
           throw new Error("No tokens available");
         }
 
-        // English Comment: Request new access token using current refresh token
+        // English Comment: Call backend /Auth/refresh endpoint with RefreshTokenDto fields
         const res = await axios.post(`${BASE_URL}/Auth/refresh`, {
           token,
           refreshToken,
         });
 
-        if (res.status === 200) {
+        if (res.status === 200 && res.data.token) {
           localStorage.setItem("token", res.data.token);
           localStorage.setItem("refreshToken", res.data.refreshToken);
 
@@ -74,10 +62,11 @@ apiClient.interceptors.response.use(
           return apiClient(originalRequest);
         }
       } catch (refreshError) {
-        // English Comment: Session completely expired or canceled; clear state and direct user to login
-        console.warn("Session expired or revoked. Redirecting to login...");
+        // English Comment: Clear authentication state on complete session failure
+        console.warn("[AUTH] Session expired. Redirecting to login...");
         localStorage.removeItem("token");
         localStorage.removeItem("refreshToken");
+        localStorage.removeItem("userEmail");
         window.location.href = "/login";
         return Promise.reject(refreshError);
       }
@@ -85,5 +74,5 @@ apiClient.interceptors.response.use(
 
     console.error("[API ERROR]", err?.response?.data || err.message);
     return Promise.reject(err);
-  },
+  }
 );

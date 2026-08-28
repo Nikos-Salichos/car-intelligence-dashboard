@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { VfmLeaderboardPage } from "./pages/VfmLeaderboardPage";
 import { FairMarketPricePage } from "./pages/FairMarketPricePage";
+import { SettingsPage } from "./pages/SettingsPage";
 import { TermsPage } from "./pages/TermsPage";
 import { PrivacyPage } from "./pages/PrivacyPage";
 import { Header } from "./components/layout/Header";
@@ -9,13 +10,14 @@ import { Footer } from "./components/layout/Footer";
 import { LoginForm } from "./components/LoginForm";
 import { authApi } from "./api/authApi";
 
-// Component για τα Tabs Πλοήγησης που αλλάζει το URL
+// Navigation tabs component updating the route
 function NavigationTabs() {
   const navigate = useNavigate();
   const location = useLocation();
 
   const isVfm = location.pathname === "/vfmdashboard" || location.pathname === "/";
   const isValuation = location.pathname === "/fair-market-price";
+  const isSettings = location.pathname === "/settings";
 
   return (
     <div className="bg-gray-900/60 border-b border-gray-800 px-6 py-2.5 flex justify-center gap-4">
@@ -37,12 +39,27 @@ function NavigationTabs() {
       >
         📊 Fair Market Price
       </button>
+      <button
+        onClick={() => navigate("/settings")}
+        className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${isSettings
+          ? "bg-blue-600 text-white shadow-md"
+          : "text-gray-400 hover:text-gray-200 hover:bg-gray-800"
+          }`}
+      >
+        ⚙️ Settings & MFA
+      </button>
     </div>
   );
 }
 
-// Main Content layout για συνδεδεμένους χρήστες
-function AuthenticatedLayout({ onLogout, onOpenTerms, onOpenPrivacy }: {
+// Main Content layout for authenticated users
+function AuthenticatedLayout({
+  userEmail,
+  onLogout,
+  onOpenTerms,
+  onOpenPrivacy,
+}: {
+  userEmail: string;
   onLogout: () => void;
   onOpenTerms: () => void;
   onOpenPrivacy: () => void;
@@ -56,6 +73,7 @@ function AuthenticatedLayout({ onLogout, onOpenTerms, onOpenPrivacy }: {
         <Routes>
           <Route path="/vfmdashboard" element={<VfmLeaderboardPage />} />
           <Route path="/fair-market-price" element={<FairMarketPricePage />} />
+          <Route path="/settings" element={<SettingsPage userEmail={userEmail} />} />
           <Route path="/" element={<Navigate to="/vfmdashboard" replace />} />
           <Route path="*" element={<Navigate to="/vfmdashboard" replace />} />
         </Routes>
@@ -68,26 +86,35 @@ function AuthenticatedLayout({ onLogout, onOpenTerms, onOpenPrivacy }: {
 
 export default function App() {
   const [token, setToken] = useState<string | null>(localStorage.getItem("token"));
+  const [userEmail, setUserEmail] = useState<string>(localStorage.getItem("userEmail") || "");
   const [showTerms, setShowTerms] = useState<boolean>(false);
   const [showPrivacy, setShowPrivacy] = useState<boolean>(false);
 
-  // Ενημέρωση του state αν αλλάξει το token στο localStorage
+  // Sync token state across storage events
   useEffect(() => {
-    const handleStorageChange = () => setToken(localStorage.getItem("token"));
+    const handleStorageChange = () => {
+      setToken(localStorage.getItem("token"));
+      setUserEmail(localStorage.getItem("userEmail") || "");
+    };
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
   const handleLogout = async () => {
-    const userEmail = localStorage.getItem("userEmail") || "";
-    await authApi.logout(userEmail);
+    const email = localStorage.getItem("userEmail") || "";
+    await authApi.logout(email);
     localStorage.removeItem("token");
+    localStorage.removeItem("userEmail");
     setToken(null);
+    setUserEmail("");
   };
 
   const handleLoginSuccess = (newToken: string) => {
     localStorage.setItem("token", newToken);
     setToken(newToken);
+    // English Comment: Retrieve and store user email from localStorage or login payload
+    const storedEmail = localStorage.getItem("userEmail") || "";
+    setUserEmail(storedEmail);
   };
 
   if (showTerms) {
@@ -97,8 +124,14 @@ export default function App() {
           <TermsPage onBack={() => setShowTerms(false)} />
         </main>
         <Footer
-          onOpenTerms={() => { setShowPrivacy(false); setShowTerms(true); }}
-          onOpenPrivacy={() => { setShowTerms(false); setShowPrivacy(true); }}
+          onOpenTerms={() => {
+            setShowPrivacy(false);
+            setShowTerms(true);
+          }}
+          onOpenPrivacy={() => {
+            setShowTerms(false);
+            setShowPrivacy(true);
+          }}
         />
       </div>
     );
@@ -111,8 +144,14 @@ export default function App() {
           <PrivacyPage onBack={() => setShowPrivacy(false)} />
         </main>
         <Footer
-          onOpenTerms={() => { setShowPrivacy(false); setShowTerms(true); }}
-          onOpenPrivacy={() => { setShowTerms(false); setShowPrivacy(true); }}
+          onOpenTerms={() => {
+            setShowPrivacy(false);
+            setShowTerms(true);
+          }}
+          onOpenPrivacy={() => {
+            setShowTerms(false);
+            setShowPrivacy(true);
+          }}
         />
       </div>
     );
@@ -144,6 +183,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthenticatedLayout
+        userEmail={userEmail}
         onLogout={handleLogout}
         onOpenTerms={() => setShowTerms(true)}
         onOpenPrivacy={() => setShowPrivacy(true)}
