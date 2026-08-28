@@ -113,6 +113,11 @@ export interface ChangePasswordPayload {
   newPassword?: string;
 }
 
+export interface RefreshTokenPayload {
+  token?: string;
+  refreshToken?: string;
+}
+
 // English Comment: Authentication API module containing endpoints for user authentication and MFA operations
 export const authApi = {
   // English Comment: Authenticate user credentials with email and password
@@ -163,6 +168,26 @@ export const authApi = {
   // English Comment: Change user password credentials
   changePassword: async (payload: ChangePasswordPayload): Promise<void> => {
     await apiClient.post("/Auth/change-password", payload);
+  },
+
+  // English Comment: Refresh expired access token using refresh token
+  refreshToken: async (payload?: RefreshTokenPayload): Promise<AuthResponse> => {
+    const token = payload?.token || localStorage.getItem("token") || "";
+    const refreshToken = payload?.refreshToken || localStorage.getItem("refreshToken") || "";
+
+    const response = await apiClient.post<AuthResponse>("/Auth/refresh", {
+      token,
+      refreshToken,
+    });
+
+    if (response.data.token) {
+      localStorage.setItem("token", response.data.token);
+    }
+    if (response.data.refreshToken) {
+      localStorage.setItem("refreshToken", response.data.refreshToken);
+    }
+
+    return response.data;
   },
 
   // English Comment: Revoke user token on backend and clear client-side auth state
