@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { authApi } from "../api/authApi";
 
@@ -19,6 +19,20 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ userEmail }) => {
 
     const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
     const [loading, setLoading] = useState(false);
+
+    // English Comment: Fetch initial MFA activation status on component mount
+    useEffect(() => {
+        const fetchMfaStatus = async () => {
+            try {
+                const response = await authApi.getMfaStatus();
+                setMfaEnabled(Boolean(response?.mfaEnabled));
+            } catch (err: unknown) {
+                console.error("[FETCH MFA STATUS ERROR]", err);
+            }
+        };
+
+        fetchMfaStatus();
+    }, []);
 
     // English Comment: Handle password change form submission
     const handlePasswordChange = async (e: React.FormEvent) => {
@@ -123,8 +137,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ userEmail }) => {
             {statusMessage && (
                 <div
                     className={`p-4 rounded-lg text-sm font-medium border ${statusMessage.type === "success"
-                        ? "bg-emerald-950/50 text-emerald-300 border-emerald-800"
-                        : "bg-red-950/50 text-red-300 border-red-800"
+                            ? "bg-emerald-950/50 text-emerald-300 border-emerald-800"
+                            : "bg-red-950/50 text-red-300 border-red-800"
                         }`}
                 >
                     {statusMessage.text}
@@ -159,7 +173,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ userEmail }) => {
                     <div>
                         <h2 className="text-lg font-semibold text-white">Two-Factor Authentication (MFA)</h2>
                         <p className="text-xs text-gray-400 mt-0.5">
-                            Secure your account using an authenticator application (e.g., Google Authenticator, Authy).
+                            {mfaEnabled
+                                ? "MFA is enabled. Your account has an extra layer of security."
+                                : "Secure your account using an authenticator application (e.g., Google Authenticator, Authy)."}
                         </p>
                     </div>
                     <button
@@ -167,16 +183,16 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ userEmail }) => {
                         onClick={handleToggleMfa}
                         disabled={loading}
                         className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all ${mfaEnabled
-                            ? "bg-red-600/80 hover:bg-red-600 text-white"
-                            : "bg-blue-600 hover:bg-blue-500 text-white"
+                                ? "bg-red-600/80 hover:bg-red-600 text-white"
+                                : "bg-blue-600 hover:bg-blue-500 text-white"
                             } disabled:opacity-50`}
                     >
                         {mfaEnabled ? "Disable MFA" : "Setup MFA"}
                     </button>
                 </div>
 
-                {/* Secret Key & QR Display Verification Step */}
-                {mfaSecret && (
+                {/* English Comment: Secret Key & QR Display step rendered strictly when MFA is not yet enabled */}
+                {!mfaEnabled && mfaSecret && (
                     <div className="mt-4 p-4 bg-gray-950 border border-gray-800 rounded-lg space-y-4">
                         <p className="text-xs text-gray-300">
                             1. Scan this QR code with your authenticator app:
