@@ -54,12 +54,14 @@ export const LoginForm: React.FC<Props> = ({ onSuccess }) => {
             if (response.token) {
                 onSuccess(response.token);
             } else {
-                // English Comment: Keep user on the MFA screen while informing them of invalid code
+                // English Comment: Reset invalid MFA code while retaining error state and screen context
+                setMfaCode("");
                 setError("Verification failed. Please double-check your code.");
             }
         } catch (err: unknown) {
             console.error("[MFA VERIFY ERROR]", err);
-            // English Comment: Maintain MFA state on exception so user stays on code input screen
+            // English Comment: Reset code input on exception so user can immediately retry
+            setMfaCode("");
             setError("Invalid or expired authentication code. Please try again.");
         } finally {
             setLoading(false);
