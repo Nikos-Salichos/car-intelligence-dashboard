@@ -92,6 +92,7 @@ export interface VerifyMfaPayload {
   email?: string;
   code: string;
   preAuthToken?: string;
+  userId?: string;
 }
 
 export interface SetupMfaResponse {
@@ -109,6 +110,7 @@ export interface AuthResponse {
   requiresMfa?: boolean;
   requiresTwoFactor?: boolean;
   preAuthToken?: string;
+  userId?: string;
 }
 
 export interface ChangePasswordPayload {
