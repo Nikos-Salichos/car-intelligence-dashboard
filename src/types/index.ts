@@ -56,3 +56,19 @@ export interface ScraperHealthDto {
   totalAutoTritiModels: number;
   newListingsImportedToday: number;
 }
+
+export type NegotiationLevel = "high" | "medium" | "low";
+
+export interface NegotiationSignalDto {
+  listingId: string;
+  brand: string;
+  model: string;
+  listingUrl: string; // already a full car.gr URL from the backend
+  currentPrice: number;
+  initialPrice: number;
+  totalDropPct: number;
+  dropCount: number;
+  raiseCount: number;
+  lastDropAt: string | null;
+  negotiationSignal: "high" | "medium" | "low" | "none";
+}

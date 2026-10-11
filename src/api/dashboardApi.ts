@@ -13,9 +13,14 @@ export const dashboardApi = {
   },
 
   getFairMarketPrice: async (carId: string, userMileage: number): Promise<T.FairMarketPriceDto> => {
-    const { data } = await apiClient.get(
-      `/Reports/fair-market-price?carId=${carId}&userMileage=${userMileage}`
-    );
+    const { data } = await apiClient.get(`/Reports/fair-market-price?carId=${carId}&userMileage=${userMileage}`);
+    return data;
+  },
+
+  getNegotiationSignals: async (minSignal: T.NegotiationLevel = "medium", take = 200): Promise<T.NegotiationSignalDto[]> => {
+    const { data } = await apiClient.get("/Reports/negotiation-signals", {
+      params: { minSignal, take },
+    });
     return data;
   },
 };

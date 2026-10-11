@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { VfmLeaderboardPage } from "./pages/VfmLeaderboardPage";
 import { FairMarketPricePage } from "./pages/FairMarketPricePage";
+import { NegotiationSignalsPage } from "./pages/NegotiationSignalsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { TermsPage } from "./pages/TermsPage";
 import { PrivacyPage } from "./pages/PrivacyPage";
@@ -17,53 +18,31 @@ function NavigationTabs() {
 
   const isVfm = location.pathname === "/vfmdashboard" || location.pathname === "/";
   const isValuation = location.pathname === "/fair-market-price";
+  const isNegotiation = location.pathname === "/negotiation";
   const isSettings = location.pathname === "/settings";
 
+  const tabClass = (active: boolean) => `px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${active ? "bg-blue-600 text-white shadow-md" : "text-gray-400 hover:text-gray-200 hover:bg-gray-800"}`;
+
   return (
-    <div className="bg-gray-900/60 border-b border-gray-800 px-6 py-2.5 flex justify-center gap-4">
-      <button
-        onClick={() => navigate("/vfmdashboard")}
-        className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${isVfm
-          ? "bg-blue-600 text-white shadow-md"
-          : "text-gray-400 hover:text-gray-200 hover:bg-gray-800"
-          }`}
-      >
-        🏆 VFM Leaderboard
+    <div className="bg-gray-900/60 border-b border-gray-800 px-6 py-2.5 flex justify-center gap-4 overflow-x-auto">
+      <button onClick={() => navigate("/vfmdashboard")} className={tabClass(isVfm)}>
+        🏆 Κατάταξη Ευκαιριών
       </button>
-      <button
-        onClick={() => navigate("/fair-market-price")}
-        className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${isValuation
-          ? "bg-blue-600 text-white shadow-md"
-          : "text-gray-400 hover:text-gray-200 hover:bg-gray-800"
-          }`}
-      >
-        📊 Fair Market Price
+      <button onClick={() => navigate("/negotiation")} className={tabClass(isNegotiation)}>
+        📉 Διαπραγμάτευση
       </button>
-      <button
-        onClick={() => navigate("/settings")}
-        className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${isSettings
-          ? "bg-blue-600 text-white shadow-md"
-          : "text-gray-400 hover:text-gray-200 hover:bg-gray-800"
-          }`}
-      >
-        ⚙️ Settings & MFA
+      <button onClick={() => navigate("/fair-market-price")} className={tabClass(isValuation)}>
+        📊 Δίκαιη Τιμή Αγοράς
+      </button>
+      <button onClick={() => navigate("/settings")} className={tabClass(isSettings)}>
+        ⚙️ Ρυθμίσεις & MFA
       </button>
     </div>
   );
 }
 
 // Main Content layout for authenticated users
-function AuthenticatedLayout({
-  userEmail,
-  onLogout,
-  onOpenTerms,
-  onOpenPrivacy,
-}: {
-  userEmail: string;
-  onLogout: () => void;
-  onOpenTerms: () => void;
-  onOpenPrivacy: () => void;
-}) {
+function AuthenticatedLayout({ userEmail, onLogout, onOpenTerms, onOpenPrivacy }: { userEmail: string; onLogout: () => void; onOpenTerms: () => void; onOpenPrivacy: () => void }) {
   return (
     <div className="min-h-screen flex flex-col bg-[#0a0a0b] font-sans text-[#f2f2f4]">
       <Header onLogout={onLogout} />
@@ -72,6 +51,7 @@ function AuthenticatedLayout({
       <main className="flex-1 w-full flex flex-col">
         <Routes>
           <Route path="/vfmdashboard" element={<VfmLeaderboardPage />} />
+          <Route path="/negotiation" element={<NegotiationSignalsPage />} />
           <Route path="/fair-market-price" element={<FairMarketPricePage />} />
           <Route path="/settings" element={<SettingsPage userEmail={userEmail} />} />
           <Route path="/" element={<Navigate to="/vfmdashboard" replace />} />
@@ -112,7 +92,7 @@ export default function App() {
   const handleLoginSuccess = (newToken: string) => {
     localStorage.setItem("token", newToken);
     setToken(newToken);
-    // English Comment: Retrieve and store user email from localStorage or login payload
+    // Retrieve and store user email from localStorage or login payload
     const storedEmail = localStorage.getItem("userEmail") || "";
     setUserEmail(storedEmail);
   };
@@ -162,17 +142,11 @@ export default function App() {
       <div className="min-h-screen flex flex-col bg-[#0a0a0b]">
         <LoginForm onSuccess={handleLoginSuccess} />
         <div className="text-center pb-6 flex justify-center gap-4">
-          <button
-            onClick={() => setShowTerms(true)}
-            className="text-xs text-zinc-500 hover:text-zinc-300 underline transition-colors"
-          >
+          <button onClick={() => setShowTerms(true)} className="text-xs text-zinc-500 hover:text-zinc-300 underline transition-colors">
             Όροι &amp; Προϋποθέσεις Χρήσης
           </button>
           <span className="text-xs text-zinc-600">•</span>
-          <button
-            onClick={() => setShowPrivacy(true)}
-            className="text-xs text-zinc-500 hover:text-zinc-300 underline transition-colors"
-          >
+          <button onClick={() => setShowPrivacy(true)} className="text-xs text-zinc-500 hover:text-zinc-300 underline transition-colors">
             Πολιτική Απορρήτου
           </button>
         </div>
@@ -182,12 +156,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <AuthenticatedLayout
-        userEmail={userEmail}
-        onLogout={handleLogout}
-        onOpenTerms={() => setShowTerms(true)}
-        onOpenPrivacy={() => setShowPrivacy(true)}
-      />
+      <AuthenticatedLayout userEmail={userEmail} onLogout={handleLogout} onOpenTerms={() => setShowTerms(true)} onOpenPrivacy={() => setShowPrivacy(true)} />
     </BrowserRouter>
   );
 }
