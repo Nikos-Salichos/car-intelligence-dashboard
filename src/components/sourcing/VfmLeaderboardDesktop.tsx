@@ -1,16 +1,50 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AgGridReact } from "ag-grid-react";
-import { ColDef, ModuleRegistry, AllCommunityModule, ValidationModule, themeQuartz, colorSchemeDark, GridApi, GridReadyEvent } from "ag-grid-community";
+import { ColDef, ICellRendererParams, ModuleRegistry, AllCommunityModule, ValidationModule, themeQuartz, colorSchemeDark, GridApi, GridReadyEvent } from "ag-grid-community";
 import { VfmLeaderboardDto } from "../../types";
 
-// English Comment: Register AG Grid Community modules once at module root scope
+// Register AG Grid Community modules once at module root scope
 ModuleRegistry.registerModules([AllCommunityModule, ValidationModule]);
 
-// English Comment: Define theme outside the component scope to avoid recreation
+// Define theme outside the component scope to avoid recreation
 const myTheme = themeQuartz.withPart(colorSchemeDark);
 
+// Greek texts for the AG Grid built-in menus, filters and pagination
+const localeText = {
+  page: "Σελίδα",
+  to: "έως",
+  of: "από",
+  first: "Πρώτη",
+  previous: "Προηγούμενη",
+  next: "Επόμενη",
+  last: "Τελευταία",
+  pageSizeSelectorLabel: "Αγγελίες ανά σελίδα:",
+  noRowsToShow: "Δεν βρέθηκαν αγγελίες",
+  filterOoo: "Φίλτρο...",
+  contains: "Περιέχει",
+  notContains: "Δεν περιέχει",
+  equals: "Ίσο με",
+  notEqual: "Διάφορο του",
+  greaterThan: "Μεγαλύτερο από",
+  greaterThanOrEqual: "Μεγαλύτερο ή ίσο",
+  lessThan: "Μικρότερο από",
+  lessThanOrEqual: "Μικρότερο ή ίσο",
+  inRange: "Μεταξύ",
+  blank: "Κενό",
+  notBlank: "Μη κενό",
+  andCondition: "ΚΑΙ",
+  orCondition: "Ή",
+  applyFilter: "Εφαρμογή",
+  resetFilter: "Επαναφορά",
+  clearFilter: "Καθαρισμός",
+  startsWith: "Ξεκινά με",
+  endsWith: "Τελειώνει με",
+};
+
+type CellParams = ICellRendererParams<VfmLeaderboardDto>;
+
 interface Props {
-  data: VfmLeaderboardDto[];
+  readonly data: VfmLeaderboardDto[];
 }
 
 export const VfmLeaderboardDesktop: React.FC<Props> = ({ data }) => {
@@ -24,10 +58,8 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({ data }) => {
     }[]
   >([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const toolbarRef = useRef<HTMLDivElement>(null);
-  const [, setToolbarHeight] = useState<number>(56);
 
-  // English Comment: Close column dropdown when clicking outside
+  // Close column dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -38,20 +70,7 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({ data }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // English Comment: Dynamically measure toolbar height
-  useEffect(() => {
-    if (!toolbarRef.current) return;
-    const element = toolbarRef.current;
-    const updateHeight = () => {
-      setToolbarHeight(element.offsetHeight);
-    };
-    updateHeight();
-    const resizeObserver = new ResizeObserver(updateHeight);
-    resizeObserver.observe(element);
-    return () => resizeObserver.disconnect();
-  }, []);
-
-  // English Comment: Synchronize AG Grid column visibility state
+  // Synchronize AG Grid column visibility state
   const syncColumnState = useCallback((api: GridApi<VfmLeaderboardDto>) => {
     const colDefs = api.getColumnDefs() || [];
     const colState = api.getColumnState();
@@ -66,7 +85,7 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({ data }) => {
     setColumnsState(mappedCols);
   }, []);
 
-  // English Comment: Save Grid API reference on initialization
+  // Save Grid API reference on initialization
   const onGridReady = useCallback(
     (params: GridReadyEvent<VfmLeaderboardDto>) => {
       setGridApi(params.api);
@@ -75,14 +94,14 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({ data }) => {
     [syncColumnState],
   );
 
-  // English Comment: Clear all AG Grid filters
+  // Clear all AG Grid filters
   const handleClearFilters = useCallback(() => {
     if (gridApi) {
       gridApi.setFilterModel(null);
     }
   }, [gridApi]);
 
-  // English Comment: Toggle individual column visibility
+  // Toggle individual column visibility
   const toggleColumnVisibility = useCallback(
     (colId: string, currentHide: boolean) => {
       if (!gridApi) return;
@@ -92,21 +111,21 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({ data }) => {
     [gridApi, syncColumnState],
   );
 
-  // English Comment: Reset column visibility to initial state
+  // Reset column visibility to initial state
   const handleResetColumnVisibility = useCallback(() => {
     if (!gridApi) return;
     gridApi.resetColumnState();
     syncColumnState(gridApi);
   }, [gridApi, syncColumnState]);
 
-  // English Comment: Desktop AG Grid column definitions
+  // Desktop AG Grid column definitions
   const columnDefs = useMemo<ColDef<VfmLeaderboardDto>[]>(
     () => [
       {
         colId: "assetModel",
         headerName: "Μάρκα",
         valueGetter: (params) => `${params.data?.brand || ""} ${params.data?.model || ""}`,
-        cellRenderer: (params: any) => (
+        cellRenderer: (params: CellParams) => (
           <div className="flex items-center gap-2 h-full">
             <span className="font-bold text-white tracking-wide">
               {params.data?.brand} {params.data?.model}
@@ -120,13 +139,13 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({ data }) => {
       },
       {
         colId: "price",
-        headerName: "Τρέχουσα Τιμή",
+        headerName: "Τρέχουσα τιμή",
         field: "price",
-        cellRenderer: (params: any) => {
+        cellRenderer: (params: CellParams) => {
           const discount = params.data?.priceDiscountOrIncreasePct;
           return (
             <div className="flex items-center gap-2 h-full">
-              <span className="text-emerald-400 font-extrabold text-sm">€{params.data?.price?.toLocaleString()}</span>
+              <span className="text-emerald-400 font-extrabold text-sm">€{params.data?.price?.toLocaleString("el-GR")}</span>
               {discount !== undefined && discount !== null && discount < 0 && <span className="text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-700 px-1.5 py-0.5 rounded">{discount}%</span>}
             </div>
           );
@@ -140,17 +159,17 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({ data }) => {
         colId: "originalPriceEuros",
         headerName: "Αρχική τιμή λιανικής",
         field: "originalPriceEuros",
-        cellRenderer: (params: any) => <div className="flex items-center h-full">{params.value ? <span className="line-through text-gray-400 font-medium text-xs">€{params.value.toLocaleString()}</span> : <span className="text-gray-600">—</span>}</div>,
+        cellRenderer: (params: CellParams) => <div className="flex items-center h-full">{params.value ? <span className="line-through text-gray-400 font-medium text-xs">€{params.value.toLocaleString("el-GR")}</span> : <span className="text-gray-600">—</span>}</div>,
         filter: "agNumberColumnFilter",
         sortable: true,
-        minWidth: 130,
+        minWidth: 150,
         flex: 1,
       },
       {
         colId: "mileage",
         headerName: "Χιλιόμετρα",
         field: "mileage",
-        cellRenderer: (params: any) => <div className="flex items-center h-full text-gray-200 font-semibold text-xs">{params.value ? `${params.value.toLocaleString()} km` : "—"}</div>,
+        cellRenderer: (params: CellParams) => <div className="flex items-center h-full text-gray-200 font-semibold text-xs">{params.value ? `${params.value.toLocaleString("el-GR")} km` : "—"}</div>,
         filter: "agNumberColumnFilter",
         sortable: true,
         minWidth: 110,
@@ -166,7 +185,7 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({ data }) => {
           const powerOrCapacity = params.data.engineCc ? `(${params.data.engineCc} ${unit})` : "";
           return `${params.data.fuelType || ""} ${powerOrCapacity}`.trim();
         },
-        cellRenderer: (params: any) => {
+        cellRenderer: (params: CellParams) => {
           if (!params.data) {
             return <span className="text-gray-600">—</span>;
           }
@@ -175,7 +194,7 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({ data }) => {
           return (
             <div className="flex items-center h-full text-gray-200 text-xs font-medium">
               <span>{params.data.fuelType || "—"}</span>
-              {params.data.engineCc && (
+              {Boolean(params.data.engineCc) && (
                 <span className="text-gray-400 ml-1">
                   ({params.data.engineCc} {unit})
                 </span>
@@ -189,9 +208,9 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({ data }) => {
       },
       {
         colId: "sellerType",
-        headerName: "Τύπος Πωλητή",
+        headerName: "Τύπος πωλητή",
         field: "sellerType",
-        cellRenderer: (params: any) => <div className="flex items-center h-full text-gray-200 text-xs font-medium">{params.value || "—"}</div>,
+        cellRenderer: (params: CellParams) => <div className="flex items-center h-full text-gray-200 text-xs font-medium">{params.value || "—"}</div>,
         filter: "agTextColumnFilter",
         sortable: true,
         minWidth: 130,
@@ -201,7 +220,7 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({ data }) => {
         colId: "addressSeller",
         headerName: "Περιοχή",
         field: "addressSeller",
-        cellRenderer: (params: any) => (
+        cellRenderer: (params: CellParams) => (
           <div className="flex items-center h-full">
             <span className="text-gray-200 text-xs font-normal whitespace-normal leading-normal" title={params.value}>
               {params.value || "—"}
@@ -214,9 +233,9 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({ data }) => {
       },
       {
         colId: "vfmScore",
-        headerName: "Βαθμός Κατάταξης",
+        headerName: "Βαθμός κατάταξης",
         field: "vfmScore",
-        cellRenderer: (params: any) => (
+        cellRenderer: (params: CellParams) => (
           <div className="flex items-center h-full">
             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-black bg-blue-900/90 text-blue-200 border border-blue-600">{params.value}</span>
           </div>
@@ -224,52 +243,53 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({ data }) => {
         filter: "agNumberColumnFilter",
         sortable: true,
         sort: "desc",
-        minWidth: 100,
-        flex: 0.9,
+        minWidth: 150,
+        flex: 1,
       },
       {
         colId: "avgCategoryPrice",
-        headerName: "AVG CAT. PRICE",
+        headerName: "Μέση τιμή κατηγορίας",
         field: "avgCategoryPrice",
         hide: true,
-        cellRenderer: (params: any) => <span className="text-xs text-gray-300 font-medium">{params.value ? `€${params.value.toLocaleString()}` : "—"}</span>,
+        cellRenderer: (params: CellParams) => <span className="text-xs text-gray-300 font-medium">{params.value ? `€${params.value.toLocaleString("el-GR")}` : "—"}</span>,
         filter: "agNumberColumnFilter",
         sortable: true,
-        minWidth: 140,
+        minWidth: 170,
       },
       {
         colId: "avgCategoryMileage",
-        headerName: "AVG CAT. MILEAGE",
+        headerName: "Μέσα χιλιόμετρα κατηγορίας",
         field: "avgCategoryMileage",
         hide: true,
-        cellRenderer: (params: any) => <span className="text-xs text-gray-300 font-medium">{params.value ? `${params.value.toLocaleString()} km` : "—"}</span>,
+        cellRenderer: (params: CellParams) => <span className="text-xs text-gray-300 font-medium">{params.value ? `${params.value.toLocaleString("el-GR")} km` : "—"}</span>,
         filter: "agNumberColumnFilter",
         sortable: true,
-        minWidth: 150,
+        minWidth: 200,
       },
       {
         colId: "createdAt",
         headerName: "Ημερομηνία δημοσίευσης",
         field: "createdAt",
-        cellRenderer: (params: any) => <span className="text-xs text-gray-400">{params.value ? new Date(params.value).toLocaleDateString() : "—"}</span>,
+        cellRenderer: (params: CellParams) => <span className="text-xs text-gray-300">{params.value ? new Date(params.value).toLocaleDateString("el-GR") : "—"}</span>,
         filter: "agDateColumnFilter",
         sortable: true,
-        minWidth: 130,
+        minWidth: 180,
+        flex: 1,
       },
       {
         colId: "action",
         headerName: "Αγγελία",
         field: "listingUrl",
-        cellRenderer: (params: any) => (
+        cellRenderer: (params: CellParams) => (
           <div className="flex items-center h-full">
             <a href={params.value} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-bold px-3 py-1.5 rounded text-xs transition-all shadow-sm">
-              Deal ↗
+              Άνοιγμα ↗
             </a>
           </div>
         ),
         sortable: false,
         filter: false,
-        minWidth: 90,
+        minWidth: 110,
         flex: 0.8,
       },
     ],
@@ -287,10 +307,10 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({ data }) => {
   return (
     <div className="w-full h-full flex flex-col flex-1">
       {/* Desktop Toolbar */}
-      <div ref={toolbarRef} className="flex items-center justify-between mb-3 sm:mb-4">
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
         <div className="flex items-center justify-start gap-3">
           <h1 className="text-base sm:text-lg font-bold tracking-tight text-white">Κατάταξη Ευκαιριών</h1>
-          <span className="px-2.5 py-0.5 rounded text-[11px] font-bold bg-gray-900 text-gray-300 border border-gray-800">{data.length} Αγγελίες</span>
+          <span className="px-2.5 py-0.5 rounded text-[11px] font-bold bg-gray-900 text-gray-300 border border-gray-800">{data.length} αγγελίες</span>
         </div>
         {/* Desktop AG Grid Controls */}
         <div className="flex items-center gap-2">
@@ -303,11 +323,11 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({ data }) => {
               Στήλες
             </button>
             {isColumnMenuOpen && (
-              <div className="absolute right-0 mt-2 w-60 bg-gray-900 border border-gray-800 rounded-lg shadow-xl z-50 p-2">
+              <div className="absolute right-0 mt-2 w-64 bg-gray-900 border border-gray-800 rounded-lg shadow-xl z-50 p-2">
                 <div className="flex items-center justify-between pb-2 mb-2 border-b border-gray-800 px-1">
-                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Visible Columns</span>
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Ορατές στήλες</span>
                   <button onClick={handleResetColumnVisibility} className="text-[11px] text-blue-400 hover:text-blue-300 font-semibold">
-                    Reset Default
+                    Επαναφορά
                   </button>
                 </div>
                 <div className="flex flex-col gap-1 max-h-64 overflow-y-auto pr-1">
@@ -321,7 +341,7 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({ data }) => {
               </div>
             )}
           </div>
-          <button onClick={handleClearFilters} className="inline-flex items-center justify-center gap-1.5 bg-gray-900 hover:bg-gray-800 active:bg-gray-700 text-gray-300 hover:text-white font-semibold text-xs px-3 py-1.5 rounded border border-gray-800 hover:border-gray-700 transition-all shadow-sm" title="Reset all column filters">
+          <button onClick={handleClearFilters} className="inline-flex items-center justify-center gap-1.5 bg-gray-900 hover:bg-gray-800 active:bg-gray-700 text-gray-300 hover:text-white font-semibold text-xs px-3 py-1.5 rounded border border-gray-800 hover:border-gray-700 transition-all shadow-sm" title="Επαναφορά όλων των φίλτρων">
             <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -331,7 +351,7 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({ data }) => {
       </div>
       {/* Desktop AG Grid */}
       <div className="w-full rounded-lg border border-gray-800 bg-gray-950 overflow-hidden shadow-2xl" style={{ height: "calc(100dvh - 260px)", minHeight: 1000 }}>
-        <AgGridReact theme={myTheme} rowData={data} columnDefs={columnDefs} defaultColDef={defaultColDef} onGridReady={onGridReady} pagination={true} paginationPageSize={25} paginationPageSizeSelector={[25, 50, 100]} animateRows={true} rowHeight={48} />
+        <AgGridReact theme={myTheme} rowData={data} columnDefs={columnDefs} defaultColDef={defaultColDef} localeText={localeText} onGridReady={onGridReady} pagination={true} paginationPageSize={25} paginationPageSizeSelector={[25, 50, 100]} animateRows={true} rowHeight={48} />
       </div>
     </div>
   );
