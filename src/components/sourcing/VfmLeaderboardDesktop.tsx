@@ -25,7 +25,7 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({ data }) => {
   >([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
-  const [toolbarHeight, setToolbarHeight] = useState<number>(56);
+  const [, setToolbarHeight] = useState<number>(56);
 
   // English Comment: Close column dropdown when clicking outside
   useEffect(() => {

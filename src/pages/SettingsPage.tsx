@@ -1,222 +1,357 @@
-import React, { useEffect, useState } from "react";
-import { QRCodeSVG } from "qrcode.react";
-import { authApi } from "../api/authApi";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AgGridReact } from "ag-grid-react";
+import { ColDef, ICellRendererParams, ModuleRegistry, AllCommunityModule, ValidationModule, themeQuartz, colorSchemeDark, GridApi, GridReadyEvent } from "ag-grid-community";
+import { VfmLeaderboardDto } from "../types";
 
-interface SettingsPageProps {
-  readonly userEmail?: string;
+// Register AG Grid Community modules once at module root scope
+ModuleRegistry.registerModules([AllCommunityModule, ValidationModule]);
+
+// Define theme outside the component scope to avoid recreation
+const myTheme = themeQuartz.withPart(colorSchemeDark);
+
+// Greek texts for the AG Grid built-in menus, filters and pagination
+const localeText = {
+  page: "Σελίδα",
+  to: "έως",
+  of: "από",
+  first: "Πρώτη",
+  previous: "Προηγούμενη",
+  next: "Επόμενη",
+  last: "Τελευταία",
+  pageSizeSelectorLabel: "Αγγελίες ανά σελίδα:",
+  noRowsToShow: "Δεν βρέθηκαν αγγελίες",
+  filterOoo: "Φίλτρο...",
+  contains: "Περιέχει",
+  notContains: "Δεν περιέχει",
+  equals: "Ίσο με",
+  notEqual: "Διάφορο του",
+  greaterThan: "Μεγαλύτερο από",
+  greaterThanOrEqual: "Μεγαλύτερο ή ίσο",
+  lessThan: "Μικρότερο από",
+  lessThanOrEqual: "Μικρότερο ή ίσο",
+  inRange: "Μεταξύ",
+  blank: "Κενό",
+  notBlank: "Μη κενό",
+  andCondition: "ΚΑΙ",
+  orCondition: "Ή",
+  applyFilter: "Εφαρμογή",
+  resetFilter: "Επαναφορά",
+  clearFilter: "Καθαρισμός",
+  startsWith: "Ξεκινά με",
+  endsWith: "Τελειώνει με",
+};
+
+type CellParams = ICellRendererParams<VfmLeaderboardDto>;
+
+interface Props {
+  readonly data: VfmLeaderboardDto[];
 }
 
-// Settings page component for managing user preferences, account security, and multi-factor authentication
-export const SettingsPage: React.FC<SettingsPageProps> = ({ userEmail }) => {
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+export const VfmLeaderboardDesktop: React.FC<Props> = ({ data }) => {
+  const [gridApi, setGridApi] = useState<GridApi<VfmLeaderboardDto> | null>(null);
+  const [isColumnMenuOpen, setIsColumnMenuOpen] = useState<boolean>(false);
+  const [columnsState, setColumnsState] = useState<
+    {
+      id: string;
+      headerName: string;
+      hide: boolean;
+    }[]
+  >([]);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const [mfaEnabled, setMfaEnabled] = useState<boolean>(false);
-  const [mfaCode, setMfaCode] = useState("");
-  const [mfaSecret, setMfaSecret] = useState<string | null>(null);
-  const [mfaUri, setMfaUri] = useState<string | null>(null);
-
-  const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  // Fetch initial MFA activation status on component mount
+  // Close column dropdown when clicking outside
   useEffect(() => {
-    const fetchMfaStatus = async () => {
-      try {
-        const response = await authApi.getMfaStatus();
-        setMfaEnabled(Boolean(response?.mfaEnabled));
-      } catch (err: unknown) {
-        console.error("[FETCH MFA STATUS ERROR]", err);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsColumnMenuOpen(false);
       }
     };
-
-    void fetchMfaStatus();
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Handle password change form submission
-  const handlePasswordChange = async (e: React.SyntheticEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setStatusMessage(null);
+  // Synchronize AG Grid column visibility state
+  const syncColumnState = useCallback((api: GridApi<VfmLeaderboardDto>) => {
+    const colDefs = api.getColumnDefs() || [];
+    const colState = api.getColumnState();
+    const mappedCols = colState.map((col) => {
+      const colDef = colDefs.find((definition) => (definition as ColDef).field === col.colId || (definition as ColDef).colId === col.colId) as ColDef | undefined;
+      return {
+        id: col.colId,
+        headerName: (colDef?.headerName as string) || col.colId,
+        hide: !!col.hide,
+      };
+    });
+    setColumnsState(mappedCols);
+  }, []);
 
-    if (newPassword !== confirmPassword) {
-      setStatusMessage({ type: "error", text: "New password and confirmation do not match." });
-      return;
+  // Save Grid API reference on initialization
+  const onGridReady = useCallback(
+    (params: GridReadyEvent<VfmLeaderboardDto>) => {
+      setGridApi(params.api);
+      syncColumnState(params.api);
+    },
+    [syncColumnState],
+  );
+
+  // Clear all AG Grid filters
+  const handleClearFilters = useCallback(() => {
+    if (gridApi) {
+      gridApi.setFilterModel(null);
     }
+  }, [gridApi]);
 
-    if (newPassword.length < 6) {
-      setStatusMessage({ type: "error", text: "Password must be at least 6 characters long." });
-      return;
-    }
+  // Toggle individual column visibility
+  const toggleColumnVisibility = useCallback(
+    (colId: string, currentHide: boolean) => {
+      if (!gridApi) return;
+      gridApi.setColumnsVisible([colId], currentHide);
+      syncColumnState(gridApi);
+    },
+    [gridApi, syncColumnState],
+  );
 
-    setLoading(true);
-    try {
-      await authApi.changePassword({
-        currentPassword,
-        newPassword,
-      });
+  // Reset column visibility to initial state
+  const handleResetColumnVisibility = useCallback(() => {
+    if (!gridApi) return;
+    gridApi.resetColumnState();
+    syncColumnState(gridApi);
+  }, [gridApi, syncColumnState]);
 
-      setStatusMessage({ type: "success", text: "Password updated successfully!" });
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-    } catch (err: unknown) {
-      const errorObj = err as { response?: { data?: { message?: string } } };
-      const errorText = errorObj?.response?.data?.message || "Failed to update password. Please check your current password.";
-      setStatusMessage({ type: "error", text: errorText });
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Desktop AG Grid column definitions
+  const columnDefs = useMemo<ColDef<VfmLeaderboardDto>[]>(
+    () => [
+      {
+        colId: "assetModel",
+        headerName: "Μάρκα",
+        valueGetter: (params) => `${params.data?.brand || ""} ${params.data?.model || ""}`,
+        cellRenderer: (params: CellParams) => (
+          <div className="flex items-center gap-2 h-full">
+            <span className="font-bold text-white tracking-wide">
+              {params.data?.brand} {params.data?.model}
+            </span>
+          </div>
+        ),
+        filter: "agTextColumnFilter",
+        sortable: true,
+        minWidth: 180,
+        flex: 1.5,
+      },
+      {
+        colId: "price",
+        headerName: "Τρέχουσα τιμή",
+        field: "price",
+        cellRenderer: (params: CellParams) => {
+          const discount = params.data?.priceDiscountOrIncreasePct;
+          return (
+            <div className="flex items-center gap-2 h-full">
+              <span className="text-emerald-400 font-extrabold text-sm">€{params.data?.price?.toLocaleString("el-GR")}</span>
+              {discount !== undefined && discount !== null && discount < 0 && <span className="text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-700 px-1.5 py-0.5 rounded">{discount}%</span>}
+            </div>
+          );
+        },
+        filter: "agNumberColumnFilter",
+        sortable: true,
+        minWidth: 130,
+        flex: 1,
+      },
+      {
+        colId: "originalPriceEuros",
+        headerName: "Αρχική τιμή λιανικής",
+        field: "originalPriceEuros",
+        cellRenderer: (params: CellParams) => <div className="flex items-center h-full">{params.value ? <span className="line-through text-gray-400 font-medium text-xs">€{params.value.toLocaleString("el-GR")}</span> : <span className="text-gray-600">—</span>}</div>,
+        filter: "agNumberColumnFilter",
+        sortable: true,
+        minWidth: 150,
+        flex: 1,
+      },
+      {
+        colId: "mileage",
+        headerName: "Χιλιόμετρα",
+        field: "mileage",
+        cellRenderer: (params: CellParams) => <div className="flex items-center h-full text-gray-200 font-semibold text-xs">{params.value ? `${params.value.toLocaleString("el-GR")} km` : "—"}</div>,
+        filter: "agNumberColumnFilter",
+        sortable: true,
+        minWidth: 110,
+        flex: 1,
+      },
+      {
+        colId: "specsFuel",
+        headerName: "Καύσιμο",
+        valueGetter: (params) => {
+          if (!params.data) return "";
+          const isElectric = params.data.fuelType?.toLowerCase().includes("electric") || params.data.fuelType?.toLowerCase().includes("ev");
+          const unit = isElectric ? "kW" : "cc";
+          const powerOrCapacity = params.data.engineCc ? `(${params.data.engineCc} ${unit})` : "";
+          return `${params.data.fuelType || ""} ${powerOrCapacity}`.trim();
+        },
+        cellRenderer: (params: CellParams) => {
+          if (!params.data) {
+            return <span className="text-gray-600">—</span>;
+          }
+          const isElectric = params.data.fuelType?.toLowerCase().includes("electric") || params.data.fuelType?.toLowerCase().includes("ev");
+          const unit = isElectric ? "kW" : "cc";
+          return (
+            <div className="flex items-center h-full text-gray-200 text-xs font-medium">
+              <span>{params.data.fuelType || "—"}</span>
+              {Boolean(params.data.engineCc) && (
+                <span className="text-gray-400 ml-1">
+                  ({params.data.engineCc} {unit})
+                </span>
+              )}
+            </div>
+          );
+        },
+        filter: "agTextColumnFilter",
+        minWidth: 150,
+        flex: 1,
+      },
+      {
+        colId: "sellerType",
+        headerName: "Τύπος πωλητή",
+        field: "sellerType",
+        cellRenderer: (params: CellParams) => <div className="flex items-center h-full text-gray-200 text-xs font-medium">{params.value || "—"}</div>,
+        filter: "agTextColumnFilter",
+        sortable: true,
+        minWidth: 130,
+        flex: 1,
+      },
+      {
+        colId: "addressSeller",
+        headerName: "Περιοχή",
+        field: "addressSeller",
+        cellRenderer: (params: CellParams) => (
+          <div className="flex items-center h-full">
+            <span className="text-gray-200 text-xs font-normal whitespace-normal leading-normal" title={params.value}>
+              {params.value || "—"}
+            </span>
+          </div>
+        ),
+        filter: "agTextColumnFilter",
+        minWidth: 220,
+        flex: 2,
+      },
+      {
+        colId: "vfmScore",
+        headerName: "Βαθμός κατάταξης",
+        field: "vfmScore",
+        cellRenderer: (params: CellParams) => (
+          <div className="flex items-center h-full">
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-black bg-blue-900/90 text-blue-200 border border-blue-600">{params.value}</span>
+          </div>
+        ),
+        filter: "agNumberColumnFilter",
+        sortable: true,
+        sort: "desc",
+        minWidth: 150,
+        flex: 1,
+      },
+      {
+        colId: "avgCategoryPrice",
+        headerName: "Μέση τιμή κατηγορίας",
+        field: "avgCategoryPrice",
+        hide: true,
+        cellRenderer: (params: CellParams) => <span className="text-xs text-gray-300 font-medium">{params.value ? `€${params.value.toLocaleString("el-GR")}` : "—"}</span>,
+        filter: "agNumberColumnFilter",
+        sortable: true,
+        minWidth: 170,
+      },
+      {
+        colId: "avgCategoryMileage",
+        headerName: "Μέσα χιλιόμετρα κατηγορίας",
+        field: "avgCategoryMileage",
+        hide: true,
+        cellRenderer: (params: CellParams) => <span className="text-xs text-gray-300 font-medium">{params.value ? `${params.value.toLocaleString("el-GR")} km` : "—"}</span>,
+        filter: "agNumberColumnFilter",
+        sortable: true,
+        minWidth: 200,
+      },
+      {
+        colId: "createdAt",
+        headerName: "Ημερομηνία δημοσίευσης",
+        field: "createdAt",
+        cellRenderer: (params: CellParams) => <span className="text-xs text-gray-300">{params.value ? new Date(params.value).toLocaleDateString("el-GR") : "—"}</span>,
+        filter: "agDateColumnFilter",
+        sortable: true,
+        minWidth: 180,
+        flex: 1,
+      },
+      {
+        colId: "action",
+        headerName: "Αγγελία",
+        field: "listingUrl",
+        cellRenderer: (params: CellParams) => (
+          <div className="flex items-center h-full">
+            <a href={params.value} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-bold px-3 py-1.5 rounded text-xs transition-all shadow-sm">
+              Άνοιγμα ↗
+            </a>
+          </div>
+        ),
+        sortable: false,
+        filter: false,
+        minWidth: 110,
+        flex: 0.8,
+      },
+    ],
+    [],
+  );
 
-  // Initiate MFA setup flow or disable active MFA
-  const handleToggleMfa = async () => {
-    setStatusMessage(null);
-    setLoading(true);
-
-    try {
-      if (mfaEnabled) {
-        await authApi.disableMfa();
-        setMfaEnabled(false);
-        setMfaSecret(null);
-        setMfaUri(null);
-        setStatusMessage({ type: "success", text: "Multi-Factor Authentication disabled." });
-      } else {
-        const response = await authApi.setupMfa(userEmail);
-        setMfaSecret(response.secret || "MFA-SECRET-KEY");
-        setMfaUri(response.authenticatorUri || null);
-        setStatusMessage({ type: "success", text: "Scan the QR code or enter the secret key below into your authenticator app." });
-      }
-    } catch (err: unknown) {
-      const errorObj = err as { response?: { data?: { message?: string } } };
-      const errorText = errorObj?.response?.data?.message || "Failed to update MFA settings.";
-      setStatusMessage({ type: "error", text: errorText });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Confirm setup code to activate MFA
-  const handleVerifyMfaSetup = async (e: React.SyntheticEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setStatusMessage(null);
-    setLoading(true);
-
-    try {
-      await authApi.verifyMfaSetup({ code: mfaCode, email: userEmail });
-      setMfaEnabled(true);
-      setMfaSecret(null);
-      setMfaUri(null);
-      setMfaCode("");
-      setStatusMessage({ type: "success", text: "Multi-Factor Authentication enabled successfully!" });
-    } catch (err: unknown) {
-      const errorObj = err as { response?: { data?: { message?: string } } };
-      const errorText = errorObj?.response?.data?.message || "Invalid verification code. Please try again.";
-      setStatusMessage({ type: "error", text: errorText });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const defaultColDef = useMemo<ColDef>(
+    () => ({
+      resizable: true,
+      floatingFilter: true,
+    }),
+    [],
+  );
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 py-8 space-y-8">
-      {/* Header section */}
-      <div className="border-b border-gray-800 pb-5">
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2">⚙️ Settings & Account Security</h1>
-        <p className="text-sm text-gray-400 mt-1">Manage your account credentials, view user status, and configure Multi-Factor Authentication (MFA).</p>
-      </div>
-
-      {/* Global Status Banner */}
-      {statusMessage && <div className={`p-4 rounded-lg text-sm font-medium border ${statusMessage.type === "success" ? "bg-emerald-950/50 text-emerald-300 border-emerald-800" : "bg-red-950/50 text-red-300 border-red-800"}`}>{statusMessage.text}</div>}
-
-      {/* Account Info Card */}
-      <div className="bg-gray-900/60 border border-gray-800 rounded-xl p-6 space-y-4">
-        <h2 className="text-lg font-semibold text-white">Account Information</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-          <div>
-            <label htmlFor="accountEmail" className="text-gray-400 block mb-1">
-              Email Address
-            </label>
-            <input id="accountEmail" type="text" readOnly value={userEmail || "user@carscanner.com"} className="w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-gray-300 cursor-not-allowed focus:outline-none" />
-          </div>
-          <div>
-            <span className="text-gray-400 block mb-1">Account Status</span>
-            <div className="w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-emerald-400 font-medium">● Active & Verified</div>
-          </div>
+    <div className="w-full h-full flex flex-col flex-1">
+      {/* Desktop Toolbar */}
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
+        <div className="flex items-center justify-start gap-3">
+          <h1 className="text-base sm:text-lg font-bold tracking-tight text-white">Κατάταξη Ευκαιριών</h1>
+          <span className="px-2.5 py-0.5 rounded text-[11px] font-bold bg-gray-900 text-gray-300 border border-gray-800">{data.length} αγγελίες</span>
         </div>
-      </div>
-
-      {/* Multi-Factor Authentication Card */}
-      <div className="bg-gray-900/60 border border-gray-800 rounded-xl p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-white">Two-Factor Authentication (MFA)</h2>
-            <p className="text-xs text-gray-400 mt-0.5">{mfaEnabled ? "MFA is enabled. Your account has an extra layer of security." : "Secure your account using an authenticator application (e.g., Google Authenticator, Authy)."}</p>
-          </div>
-          <button type="button" onClick={handleToggleMfa} disabled={loading} className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all ${mfaEnabled ? "bg-red-600/80 hover:bg-red-600 text-white" : "bg-blue-600 hover:bg-blue-500 text-white"} disabled:opacity-50`}>
-            {mfaEnabled ? "Disable MFA" : "Setup MFA"}
-          </button>
-        </div>
-
-        {/* Secret Key & QR Display step rendered strictly when MFA is not yet enabled */}
-        {!mfaEnabled && mfaSecret && (
-          <div className="mt-4 p-4 bg-gray-950 border border-gray-800 rounded-lg space-y-4">
-            <p className="text-xs text-gray-300">1. Scan this QR code with your authenticator app:</p>
-
-            {/* Display QR image generated from backend authenticatorUri */}
-            {mfaUri && (
-              <div className="flex justify-center bg-white p-3 rounded-lg max-w-45 mx-auto border border-gray-700">
-                <QRCodeSVG value={mfaUri} size={150} level="M" />
+        {/* Desktop AG Grid Controls */}
+        <div className="flex items-center gap-2">
+          <div className="relative" ref={dropdownRef}>
+            <button onClick={() => setIsColumnMenuOpen((previous) => !previous)} className="inline-flex items-center justify-center gap-1.5 bg-gray-900 hover:bg-gray-800 active:bg-gray-700 text-gray-300 hover:text-white font-semibold text-xs px-3 py-1.5 rounded border border-gray-800 hover:border-gray-700 transition-all shadow-sm">
+              <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              Στήλες
+            </button>
+            {isColumnMenuOpen && (
+              <div className="absolute right-0 mt-2 w-64 bg-gray-900 border border-gray-800 rounded-lg shadow-xl z-50 p-2">
+                <div className="flex items-center justify-between pb-2 mb-2 border-b border-gray-800 px-1">
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Ορατές στήλες</span>
+                  <button onClick={handleResetColumnVisibility} className="text-[11px] text-blue-400 hover:text-blue-300 font-semibold">
+                    Επαναφορά
+                  </button>
+                </div>
+                <div className="flex flex-col gap-1 max-h-64 overflow-y-auto pr-1">
+                  {columnsState.map((col) => (
+                    <label key={col.id} className="flex items-center justify-between px-2 py-1 rounded hover:bg-gray-800 cursor-pointer text-xs text-gray-200 transition-colors">
+                      <span>{col.headerName}</span>
+                      <input type="checkbox" checked={!col.hide} onChange={() => toggleColumnVisibility(col.id, col.hide)} className="w-4 h-4 rounded bg-gray-950 border-gray-700 text-blue-600 focus:ring-0 cursor-pointer" />
+                    </label>
+                  ))}
+                </div>
               </div>
             )}
-
-            <div className="space-y-1">
-              <p className="text-xs text-gray-400">Or manually enter this secret key:</p>
-              <div className="bg-gray-900 border border-gray-800 p-2.5 rounded text-center text-xs font-mono text-blue-400 select-all">{mfaSecret}</div>
-            </div>
-
-            <form onSubmit={handleVerifyMfaSetup} className="space-y-3">
-              <label htmlFor="mfaCode" className="text-xs text-gray-300 block font-semibold">
-                2. Confirm verification code:
-              </label>
-              <div className="flex gap-2 items-center">
-                <input id="mfaCode" type="text" placeholder="Enter 6-digit code" value={mfaCode} onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ""))} maxLength={6} required className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500 w-48 font-mono tracking-widest text-center" />
-                <button type="submit" disabled={loading || mfaCode.length < 6} className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-xs font-semibold transition-all disabled:opacity-50">
-                  Confirm Code
-                </button>
-              </div>
-            </form>
           </div>
-        )}
-      </div>
-
-      {/* Change Password Card */}
-      <div className="bg-gray-900/60 border border-gray-800 rounded-xl p-6 space-y-4">
-        <h2 className="text-lg font-semibold text-white">Change Password</h2>
-        <form onSubmit={handlePasswordChange} className="space-y-4 max-w-md">
-          <div>
-            <label htmlFor="currentPassword" className="text-xs text-gray-400 block mb-1">
-              Current Password
-            </label>
-            <input id="currentPassword" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required className="w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500" />
-          </div>
-          <div>
-            <label htmlFor="newPassword" className="text-xs text-gray-400 block mb-1">
-              New Password
-            </label>
-            <input id="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required className="w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500" />
-          </div>
-          <div>
-            <label htmlFor="confirmPassword" className="text-xs text-gray-400 block mb-1">
-              Confirm New Password
-            </label>
-            <input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required className="w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500" />
-          </div>
-
-          <button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg text-xs font-semibold transition-all disabled:opacity-50">
-            Update Password
+          <button onClick={handleClearFilters} className="inline-flex items-center justify-center gap-1.5 bg-gray-900 hover:bg-gray-800 active:bg-gray-700 text-gray-300 hover:text-white font-semibold text-xs px-3 py-1.5 rounded border border-gray-800 hover:border-gray-700 transition-all shadow-sm" title="Επαναφορά όλων των φίλτρων">
+            <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Καθαρισμός φίλτρων
           </button>
-        </form>
+        </div>
+      </div>
+      {/* Desktop AG Grid */}
+      <div className="w-full rounded-lg border border-gray-800 bg-gray-950 overflow-hidden shadow-2xl" style={{ height: "calc(100dvh - 260px)", minHeight: 1000 }}>
+        <AgGridReact theme={myTheme} rowData={data} columnDefs={columnDefs} defaultColDef={defaultColDef} localeText={localeText} onGridReady={onGridReady} pagination={true} paginationPageSize={25} paginationPageSizeSelector={[25, 50, 100]} animateRows={true} rowHeight={48} />
       </div>
     </div>
   );
