@@ -23,4 +23,11 @@ export const dashboardApi = {
     });
     return data;
   },
+
+  getCompetitionAnalysis: async (minPerSide = 3): Promise<T.CompetitionAnalysisDto[]> => {
+    const { data } = await apiClient.get("/Reports/competition-analysis", {
+      params: { minPerSide },
+    });
+    return data;
+  },
 };

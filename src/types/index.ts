@@ -72,3 +72,16 @@ export interface NegotiationSignalDto {
   lastDropAt: string | null;
   negotiationSignal: "high" | "medium" | "low" | "none";
 }
+
+export interface CompetitionAnalysisDto {
+  brand: string;
+  model: string;
+  privateListingsCount: number;
+  privateMedianPrice: number;
+  privateMedianMileage: number;
+  dealerListingsCount: number;
+  dealerMedianPrice: number;
+  dealerMedianMileage: number;
+  medianMargin: number;
+  marginPct: number;
+}
