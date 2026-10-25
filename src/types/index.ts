@@ -47,6 +47,10 @@ export interface FairMarketPriceDto {
   marketAvgMileage: number;
   marketAvgPrice: number;
   fairMarketPrice: number;
+  sampleSize: number;
+  totalListings: number;
+  mileageOutOfRange: boolean;
+  isIndicative: boolean;
 }
 
 export interface ScraperHealthDto {
