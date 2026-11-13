@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { AgGridReact } from "ag-grid-react";
 import { ColDef, ICellRendererParams, ModuleRegistry, AllCommunityModule, ValidationModule, themeQuartz, colorSchemeDark, GridApi, GridReadyEvent } from "ag-grid-community";
 import { VfmLeaderboardDto } from "../../types";
+import { ScoreBadge } from "./ScoreBadge";
 
 // Register AG Grid Community modules once at module root scope
 ModuleRegistry.registerModules([AllCommunityModule, ValidationModule]);
@@ -141,15 +142,11 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({ data }) => {
         colId: "price",
         headerName: "Τρέχουσα τιμή",
         field: "price",
-        cellRenderer: (params: CellParams) => {
-          const discount = params.data?.priceDiscountOrIncreasePct;
-          return (
-            <div className="flex items-center gap-2 h-full">
-              <span className="text-emerald-400 font-extrabold text-sm">€{params.data?.price?.toLocaleString("el-GR")}</span>
-              {discount !== undefined && discount !== null && discount < 0 && <span className="text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-700 px-1.5 py-0.5 rounded">{discount}%</span>}
-            </div>
-          );
-        },
+        cellRenderer: (params: CellParams) => (
+          <div className="flex items-center h-full">
+            <span className="text-emerald-400 font-extrabold text-sm">€{params.data?.price?.toLocaleString("el-GR")}</span>
+          </div>
+        ),
         filter: "agNumberColumnFilter",
         sortable: true,
         minWidth: 130,
@@ -233,17 +230,53 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({ data }) => {
       },
       {
         colId: "vfmScore",
-        headerName: "Βαθμός κατάταξης",
+        headerName: "Έκπτωση vs αγορά",
+        headerTooltip: "% φθηνότερη από την αναμενόμενη τιμή για το ίδιο μοντέλο, έτος, χιλιόμετρα, καύσιμο και κινητήρα",
         field: "vfmScore",
-        cellRenderer: (params: CellParams) => (
-          <div className="flex items-center h-full">
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-black bg-blue-900/90 text-blue-200 border border-blue-600">{params.value}</span>
-          </div>
-        ),
+        cellRenderer: (params: CellParams) => <div className="flex items-center h-full">{params.data && <ScoreBadge item={params.data} />}</div>,
         filter: "agNumberColumnFilter",
         sortable: true,
         sort: "desc",
+        minWidth: 190,
+        flex: 1,
+      },
+      {
+        colId: "expectedPrice",
+        headerName: "Αναμενόμενη τιμή",
+        field: "expectedPrice",
+        cellRenderer: (params: CellParams) => <span className="text-xs text-gray-200 font-medium">{params.value ? `€${params.value.toLocaleString("el-GR")}` : "—"}</span>,
+        filter: "agNumberColumnFilter",
+        sortable: true,
         minWidth: 150,
+        flex: 1,
+      },
+      {
+        colId: "savingsEuros",
+        headerName: "Εξοικονόμηση",
+        field: "savingsEuros",
+        cellRenderer: (params: CellParams) => (
+          <span className={`text-xs font-semibold ${params.value > 0 && !params.data?.isSuspect ? "text-emerald-400" : "text-gray-500"}`}>
+            {params.value ? `${params.value > 0 ? "−" : "+"}€${Math.abs(params.value).toLocaleString("el-GR")}` : "—"}
+          </span>
+        ),
+        filter: "agNumberColumnFilter",
+        sortable: true,
+        minWidth: 130,
+        flex: 1,
+      },
+      {
+        colId: "confidence",
+        headerName: "Αξιοπιστία",
+        field: "confidence",
+        valueFormatter: (params) => ({ High: "Υψηλή", Medium: "Μέτρια", Low: "Χαμηλή" })[params.value as string] ?? "",
+        cellRenderer: (params: CellParams) => (
+          <span className="text-xs text-gray-300" title={`${params.data?.comparableCount ?? 0} συγκρίσιμες αγγελίες`}>
+            {({ High: "Υψηλή", Medium: "Μέτρια", Low: "Χαμηλή" } as Record<string, string>)[params.value as string] ?? "—"}
+            <span className="text-gray-500"> ({params.data?.comparableCount})</span>
+          </span>
+        ),
+        filter: "agTextColumnFilter",
+        minWidth: 130,
         flex: 1,
       },
       {

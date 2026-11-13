@@ -1,3 +1,4 @@
+import { ScoreBadge } from "./ScoreBadge";
 import React, { useMemo, useState } from "react";
 import { VfmLeaderboardDto } from "../../types";
 
@@ -105,8 +106,6 @@ export const VfmLeaderboardMobile: React.FC<Props> = ({ data }) => {
                     </div>
                 ) : (
                     processedMobileData.map((item, idx) => {
-                        const discount = item.priceDiscountOrIncreasePct;
-
                         const isElectric =
                             item.fuelType
                                 ?.toLowerCase()
@@ -146,8 +145,8 @@ export const VfmLeaderboardMobile: React.FC<Props> = ({ data }) => {
                                         </div>
                                     </div>
 
-                                    <span className="inline-flex items-center px-2 py-1 rounded text-xs font-black bg-blue-900/90 text-blue-200 border border-blue-600 shrink-0">
-                                        VFM {item.vfmScore}
+                                    <span className="shrink-0">
+                                        <ScoreBadge item={item} />
                                     </span>
                                 </div>
 
@@ -163,21 +162,14 @@ export const VfmLeaderboardMobile: React.FC<Props> = ({ data }) => {
                                                 €{item.price?.toLocaleString()}
                                             </span>
 
-                                            {discount !== undefined &&
-                                                discount !== null &&
-                                                discount < 0 && (
-                                                    <span className="text-[9px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-700 px-1 py-0.5 rounded">
-                                                        {discount}%
-                                                    </span>
-                                                )}
                                         </div>
 
-                                        {item.originalPriceEuros && (
-                                            <div className="text-[10px] text-gray-500 line-through">
-                                                MSRP: €
-                                                {item.originalPriceEuros.toLocaleString()}
-                                            </div>
-                                        )}
+                                        <div className="text-[10px] text-gray-400">
+                                            Αναμενόμενη: €{item.expectedPrice?.toLocaleString("el-GR")}
+                                            {item.savingsEuros > 0 && !item.isSuspect && (
+                                                <span className="text-emerald-400"> (−€{item.savingsEuros.toLocaleString("el-GR")})</span>
+                                            )}
+                                        </div>
                                     </div>
 
                                     <div>

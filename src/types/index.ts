@@ -29,7 +29,12 @@ export interface VfmLeaderboardDto {
   isActive: boolean;
   avgCategoryPrice: number;
   avgCategoryMileage: number;
-  vfmScore: number;
+  vfmScore: number; // % cheaper than the expected market price (negative = dearer)
+  expectedPrice: number;
+  savingsEuros: number;
+  comparableCount: number;
+  confidence: "High" | "Medium" | "Low";
+  isSuspect: boolean;
 }
 
 export interface CarDto {
