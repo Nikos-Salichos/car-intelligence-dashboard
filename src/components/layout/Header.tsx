@@ -17,7 +17,7 @@ export const Header: React.FC<HeaderProps> = ({ onLogout }) => {
         onClick={onLogout}
         className="bg-gray-900 hover:bg-gray-800 text-gray-300 hover:text-white border border-gray-800 text-xs font-semibold px-3.5 py-1.5 rounded-md transition-all"
       >
-        Logout
+        Αποσύνδεση
       </button>
     </header>
   );

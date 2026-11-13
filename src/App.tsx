@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, NavLink } from "react-router-dom";
 import { VfmLeaderboardPage } from "./pages/VfmLeaderboardPage";
 import { FairMarketPricePage } from "./pages/FairMarketPricePage";
 import { NegotiationSignalsPage } from "./pages/NegotiationSignalsPage";
@@ -12,39 +12,30 @@ import { Footer } from "./components/layout/Footer";
 import { LoginForm } from "./components/LoginForm";
 import { authApi } from "./api/authApi";
 
-// Navigation tabs component updating the route
+const TABS = [
+  { to: "/vfmdashboard", label: "🏆 Κατάταξη Ευκαιριών" },
+  { to: "/negotiation", label: "📉 Διαπραγμάτευση" },
+  { to: "/competition", label: "🤝 Ιδιώτες vs Έμποροι" },
+  { to: "/fair-market-price", label: "📊 Δίκαιη Τιμή Αγοράς" },
+  { to: "/settings", label: "⚙️ Ρυθμίσεις & MFA" },
+];
+
+// Real links: keyboard/screen-reader friendly, middle-click works, aria-current set automatically
 function NavigationTabs() {
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const isVfm = location.pathname === "/vfmdashboard" || location.pathname === "/";
-  const isNegotiation = location.pathname === "/negotiation";
-  const isCompetition = location.pathname === "/competition";
-  const isValuation = location.pathname === "/fair-market-price";
-  const isSettings = location.pathname === "/settings";
-
-  const tabClass = (active: boolean) =>
-    `px-4 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${active ? "bg-blue-600 text-white shadow-md" : "text-gray-400 hover:text-gray-200 hover:bg-gray-800"
-    }`;
-
   return (
-    <div className="bg-gray-900/60 border-b border-gray-800 px-6 py-2.5 flex justify-start md:justify-center gap-4 overflow-x-auto">
-      <button onClick={() => navigate("/vfmdashboard")} className={tabClass(isVfm)}>
-        🏆 Κατάταξη Ευκαιριών
-      </button>
-      <button onClick={() => navigate("/negotiation")} className={tabClass(isNegotiation)}>
-        📉 Διαπραγμάτευση
-      </button>
-      <button onClick={() => navigate("/competition")} className={tabClass(isCompetition)}>
-        🤝 Ιδιώτες vs Έμποροι
-      </button>
-      <button onClick={() => navigate("/fair-market-price")} className={tabClass(isValuation)}>
-        📊 Δίκαιη Τιμή Αγοράς
-      </button>
-      <button onClick={() => navigate("/settings")} className={tabClass(isSettings)}>
-        ⚙️ Ρυθμίσεις & MFA
-      </button>
-    </div>
+    <nav aria-label="Κύρια πλοήγηση" className="bg-gray-900/60 border-b border-gray-800 px-4 sm:px-6 py-2.5 flex justify-start md:justify-center gap-2 sm:gap-4 overflow-x-auto">
+      {TABS.map((t) => (
+        <NavLink
+          key={t.to}
+          to={t.to}
+          className={({ isActive }) =>
+            `px-4 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-400 ${isActive ? "bg-blue-600 text-white shadow-md" : "text-gray-400 hover:text-gray-200 hover:bg-gray-800"}`
+          }
+        >
+          {t.label}
+        </NavLink>
+      ))}
+    </nav>
   );
 }
 

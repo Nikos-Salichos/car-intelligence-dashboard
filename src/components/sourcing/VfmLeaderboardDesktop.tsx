@@ -350,7 +350,7 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({ data }) => {
         </div>
       </div>
       {/* Desktop AG Grid */}
-      <div className="w-full rounded-lg border border-gray-800 bg-gray-950 overflow-hidden shadow-2xl" style={{ height: "calc(100dvh - 260px)", minHeight: 1000 }}>
+      <div className="w-full rounded-lg border border-gray-800 bg-gray-950 overflow-hidden shadow-2xl" style={{ height: "calc(100dvh - 260px)", minHeight: 480 }}>
         <AgGridReact theme={myTheme} rowData={data} columnDefs={columnDefs} defaultColDef={defaultColDef} localeText={localeText} onGridReady={onGridReady} pagination={true} paginationPageSize={25} paginationPageSizeSelector={[25, 50, 100]} animateRows={true} rowHeight={48} />
       </div>
     </div>
