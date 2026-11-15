@@ -5,6 +5,7 @@ import { FairMarketPricePage } from "./pages/FairMarketPricePage";
 import { NegotiationSignalsPage } from "./pages/NegotiationSignalsPage";
 import { CompetitionPage } from "./pages/CompetitionPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { ListingBriefPage } from "./pages/ListingBriefPage";
 import { TermsPage } from "./pages/TermsPage";
 import { PrivacyPage } from "./pages/PrivacyPage";
 import { Header } from "./components/layout/Header";
@@ -62,6 +63,7 @@ function AuthenticatedLayout({
           <Route path="/negotiation" element={<NegotiationSignalsPage />} />
           <Route path="/competition" element={<CompetitionPage />} />
           <Route path="/fair-market-price" element={<FairMarketPricePage />} />
+          <Route path="/brief/:listingId" element={<ListingBriefPage />} />
           <Route path="/settings" element={<SettingsPage userEmail={userEmail} />} />
           <Route path="/" element={<Navigate to="/vfmdashboard" replace />} />
           <Route path="*" element={<Navigate to="/vfmdashboard" replace />} />

@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { ScoreBadge } from "./ScoreBadge";
 import React, { useMemo, useState } from "react";
 import { VfmLeaderboardDto } from "../../types";
@@ -188,11 +189,18 @@ export const VfmLeaderboardMobile: React.FC<Props> = ({ data }) => {
                                 {/* Address & Action */}
                                 <div className="flex items-center justify-between gap-2 pt-0.5">
                                     <span
-                                        className="text-[11px] text-gray-300 leading-tight truncate max-w-[65%]"
+                                        className="text-[11px] text-gray-300 leading-tight truncate max-w-[40%]"
                                         title={item.addressSeller}
                                     >
                                         📍 {item.addressSeller || "No address provided"}
                                     </span>
+
+                                    <Link
+                                        to={`/brief/${item.listingId}`}
+                                        className="inline-flex items-center justify-center bg-gray-800 text-gray-100 font-bold px-3 py-1.5 rounded text-xs border border-gray-700 shrink-0"
+                                    >
+                                        Φάκελος
+                                    </Link>
 
                                     <a
                                         href={item.listingUrl}

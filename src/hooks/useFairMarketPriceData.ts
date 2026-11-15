@@ -45,7 +45,7 @@ export const useFairMarketPriceData = () => {
     }, []);
 
     // Function to trigger valuation calculation
-    const calculatePrice = async (carId: string, userMileage: number) => {
+    const calculatePrice = async (carId: string, userMileage: number, options: T.FairMarketPriceOptions = {}) => {
         if (!carId) {
             setError("Παρακαλώ επιλέξτε όχημα.");
             return;
@@ -56,7 +56,7 @@ export const useFairMarketPriceData = () => {
 
         try {
             const data = await withRetry(() =>
-                dashboardApi.getFairMarketPrice(carId, userMileage)
+                dashboardApi.getFairMarketPrice(carId, userMileage, options)
             );
             setResult(data);
         } catch (err: unknown) {

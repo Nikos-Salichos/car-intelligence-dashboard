@@ -1,22 +1,27 @@
 import React, { useState, useMemo } from "react";
-import { CarDto, FairMarketPriceDto } from "../../types";
+import { CarDto, FairMarketPriceDto, FairMarketPriceOptions } from "../../types";
 
 interface Props {
   cars: CarDto[];
   loadingCars: boolean;
   calculating: boolean;
   result: FairMarketPriceDto | null;
-  onCalculate: (carId: string, userMileage: number) => void;
+  onCalculate: (carId: string, userMileage: number, options?: FairMarketPriceOptions) => void;
 }
 
-const MAX_MILEAGE = 1_000_000;
+const MAX_MILEAGE = 500_000; // must match the API limit, otherwise the API answers 400
 
 const formatNumber = (value: number) => value.toLocaleString("el-GR");
+
+const FUELS = ["Petrol", "Diesel", "Hybrid", "Hybrid petrol", "Plug-in hybrid petrol", "Electric", "Gas/lpg", "Natural gas(cng)"];
+const CONFIDENCE_LABEL = { High: "Υψηλή", Medium: "Μέτρια", Low: "Χαμηλή" } as const;
 
 export const FairMarketPriceCalculator: React.FC<Props> = ({ cars, loadingCars, calculating, result, onCalculate }) => {
   const [selectedBrand, setSelectedBrand] = useState<string>("");
   const [selectedCarId, setSelectedCarId] = useState<string>("");
   const [userMileage, setUserMileage] = useState<number | "">(30000);
+  const [fuel, setFuel] = useState<string>("");
+  const [engineCc, setEngineCc] = useState<number | "">("");
 
   // Μοναδικές μάρκες, ταξινομημένες αλφαβητικά
   const brands = useMemo(() => {
@@ -36,7 +41,10 @@ export const FairMarketPriceCalculator: React.FC<Props> = ({ cars, loadingCars, 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSubmit) return;
-    onCalculate(selectedCarId, Number(userMileage));
+    onCalculate(selectedCarId, Number(userMileage), {
+      ...(fuel ? { fuel } : {}),
+      ...(engineCc !== "" ? { engineCc: Number(engineCc) } : {}),
+    });
   };
 
   return (
@@ -98,6 +106,23 @@ export const FairMarketPriceCalculator: React.FC<Props> = ({ cars, loadingCars, 
               {mileageInvalid && <span className="text-xs text-red-400">Εισάγετε τιμή από 0 έως {formatNumber(MAX_MILEAGE)} km.</span>}
             </div>
 
+            {/* Προαιρετικά: βελτιώνουν την ακρίβεια */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-gray-400">Καύσιμο (προαιρετικό)</label>
+              <select className="bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-sm text-gray-100 focus:outline-none focus:border-blue-500 transition-colors" value={fuel} onChange={(e) => setFuel(e.target.value)}>
+                <option value="">Αυτόματα (συνηθέστερο)</option>
+                {FUELS.map((f) => (
+                  <option key={f} value={f}>
+                    {f}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-gray-400">Κυβικά cc (προαιρετικό)</label>
+              <input type="number" min="600" max="8000" step="1" className="bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-sm text-gray-100 focus:outline-none focus:border-blue-500 transition-colors" value={engineCc} onChange={(e) => setEngineCc(e.target.value === "" ? "" : Number(e.target.value))} placeholder="π.χ. 1500" />
+            </div>
+
             {/* Υποβολή */}
             <div className="md:col-span-3 flex justify-end mt-2">
               <button type="submit" disabled={!canSubmit} className="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-500 text-white font-semibold py-2.5 px-6 rounded-lg text-sm transition-all flex items-center gap-2">
@@ -132,9 +157,9 @@ export const FairMarketPriceCalculator: React.FC<Props> = ({ cars, loadingCars, 
                 <span className="font-semibold text-gray-200">{formatNumber(result.marketAvgPrice)} €</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Αγγελίες που χρησιμοποιήθηκαν:</span>
+                <span className="text-gray-400">Συγκρίσιμες αγγελίες μοντέλου:</span>
                 <span className="font-semibold text-gray-200">
-                  {result.sampleSize} από {result.totalListings}
+                  {result.sampleSize} (αξιοπιστία: {CONFIDENCE_LABEL[result.confidence]})
                 </span>
               </div>
             </div>
@@ -145,6 +170,14 @@ export const FairMarketPriceCalculator: React.FC<Props> = ({ cars, loadingCars, 
             <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">ΔΙΚΑΙΗ ΤΙΜΗ ΑΓΟΡΑΣ</span>
             <div className={`text-4xl font-extrabold mt-2 ${result.isIndicative ? "text-yellow-400" : "text-green-400"}`}>{formatNumber(result.fairMarketPrice)} €</div>
 
+            <div className="mt-2 text-sm text-gray-300">
+              Εύρος: <span className="font-semibold">{formatNumber(result.lowPrice)} – {formatNumber(result.highPrice)} €</span>
+              <div className="text-[11px] text-gray-500">Εκεί βρίσκεται το 50% των αγγελιών ανάλογων οχημάτων</div>
+            </div>
+            <div className="mt-2 text-[11px] text-gray-500">
+              Υπολογίστηκε για: {result.fuelUsed}, {formatNumber(result.engineCcUsed)} cc
+            </div>
+
             {result.isIndicative && (
               <div className="mt-3 text-xs font-medium text-yellow-300 bg-yellow-950/40 border border-yellow-900/60 rounded-lg px-3 py-2">
                 {result.mileageOutOfRange
@@ -153,7 +186,7 @@ export const FairMarketPriceCalculator: React.FC<Props> = ({ cars, loadingCars, 
               </div>
             )}
 
-            <p className="text-xs text-gray-500 mt-3">* Η τιμή βασίζεται στις αγγελίες του ίδιου μοντέλου με τα πιο κοντινά χιλιόμετρα στα δικά σας.</p>
+            <p className="text-xs text-gray-500 mt-3">* Εκτίμηση βάσει ζητούμενων τιμών αγγελιών (όχι τιμών πώλησης), με μοντέλο που λαμβάνει υπόψη έτος, χιλιόμετρα, καύσιμο και κινητήρα.</p>
           </div>
         </div>
       )}

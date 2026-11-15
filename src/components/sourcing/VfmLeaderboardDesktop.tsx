@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { AgGridReact } from "ag-grid-react";
 import { ColDef, ICellRendererParams, ModuleRegistry, AllCommunityModule, ValidationModule, themeQuartz, colorSchemeDark, GridApi, GridReadyEvent } from "ag-grid-community";
 import { VfmLeaderboardDto } from "../../types";
+import { Link } from "react-router-dom";
 import { ScoreBadge } from "./ScoreBadge";
 
 // Register AG Grid Community modules once at module root scope
@@ -315,6 +316,9 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({ data }) => {
         field: "listingUrl",
         cellRenderer: (params: CellParams) => (
           <div className="flex items-center h-full">
+            <Link to={`/brief/${params.data?.listingId}`} className="inline-flex items-center gap-1 mr-2 bg-gray-800 hover:bg-gray-700 text-gray-100 font-bold px-3 py-1.5 rounded text-xs transition-all border border-gray-700">
+              Φάκελος
+            </Link>
             <a href={params.value} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-bold px-3 py-1.5 rounded text-xs transition-all shadow-sm">
               Άνοιγμα ↗
             </a>
@@ -322,8 +326,8 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({ data }) => {
         ),
         sortable: false,
         filter: false,
-        minWidth: 110,
-        flex: 0.8,
+        minWidth: 190,
+        flex: 1,
       },
     ],
     [],
