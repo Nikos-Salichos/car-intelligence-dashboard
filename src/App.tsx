@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate, NavLink } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, NavLink, useLocation } from "react-router-dom";
 import { VfmLeaderboardPage } from "./pages/VfmLeaderboardPage";
 import { FairMarketPricePage } from "./pages/FairMarketPricePage";
 import { NegotiationSignalsPage } from "./pages/NegotiationSignalsPage";
 import { CompetitionPage } from "./pages/CompetitionPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ListingBriefPage } from "./pages/ListingBriefPage";
 import { TermsPage } from "./pages/TermsPage";
 import { PrivacyPage } from "./pages/PrivacyPage";
@@ -52,22 +53,26 @@ function AuthenticatedLayout({
   onOpenTerms: () => void;
   onOpenPrivacy: () => void;
 }>) {
+  const location = useLocation();
   return (
     <div className="min-h-screen flex flex-col bg-[#0a0a0b] font-sans text-[#f2f2f4]">
       <Header onLogout={onLogout} />
       <NavigationTabs />
 
       <main className="flex-1 w-full flex flex-col">
-        <Routes>
-          <Route path="/vfmdashboard" element={<VfmLeaderboardPage />} />
-          <Route path="/negotiation" element={<NegotiationSignalsPage />} />
-          <Route path="/competition" element={<CompetitionPage />} />
-          <Route path="/fair-market-price" element={<FairMarketPricePage />} />
-          <Route path="/brief/:listingId" element={<ListingBriefPage />} />
-          <Route path="/settings" element={<SettingsPage userEmail={userEmail} />} />
-          <Route path="/" element={<Navigate to="/vfmdashboard" replace />} />
-          <Route path="*" element={<Navigate to="/vfmdashboard" replace />} />
-        </Routes>
+        {/* key: a crash on one page must not block the other pages */}
+        <ErrorBoundary key={location.pathname}>
+          <Routes>
+            <Route path="/vfmdashboard" element={<VfmLeaderboardPage />} />
+            <Route path="/negotiation" element={<NegotiationSignalsPage />} />
+            <Route path="/competition" element={<CompetitionPage />} />
+            <Route path="/fair-market-price" element={<FairMarketPricePage />} />
+            <Route path="/brief/:listingId" element={<ListingBriefPage />} />
+            <Route path="/settings" element={<SettingsPage userEmail={userEmail} />} />
+            <Route path="/" element={<Navigate to="/vfmdashboard" replace />} />
+            <Route path="*" element={<Navigate to="/vfmdashboard" replace />} />
+          </Routes>
+        </ErrorBoundary>
       </main>
 
       <Footer onOpenTerms={onOpenTerms} onOpenPrivacy={onOpenPrivacy} />

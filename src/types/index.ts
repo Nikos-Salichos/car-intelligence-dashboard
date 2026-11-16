@@ -57,12 +57,13 @@ export interface FairMarketPriceDto {
   totalListings: number;
   mileageOutOfRange: boolean;
   isIndicative: boolean;
-  lowPrice: number;
-  highPrice: number;
-  confidence: "High" | "Medium" | "Low";
-  fuelUsed: string;
-  engineCcUsed: number;
-  horsepowerUsed: number;
+  // Optional on purpose: an older API (deployed before this UI) does not send them, and the page must not crash.
+  lowPrice?: number;
+  highPrice?: number;
+  confidence?: "High" | "Medium" | "Low";
+  fuelUsed?: string;
+  engineCcUsed?: number;
+  horsepowerUsed?: number;
 }
 
 export interface PricePointDto {

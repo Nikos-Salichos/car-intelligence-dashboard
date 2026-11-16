@@ -159,7 +159,8 @@ export const FairMarketPriceCalculator: React.FC<Props> = ({ cars, loadingCars, 
               <div className="flex justify-between text-sm">
                 <span className="text-gray-400">Συγκρίσιμες αγγελίες μοντέλου:</span>
                 <span className="font-semibold text-gray-200">
-                  {result.sampleSize} (αξιοπιστία: {CONFIDENCE_LABEL[result.confidence]})
+                  {result.sampleSize}
+                  {result.confidence && ` (αξιοπιστία: ${CONFIDENCE_LABEL[result.confidence]})`}
                 </span>
               </div>
             </div>
@@ -170,13 +171,17 @@ export const FairMarketPriceCalculator: React.FC<Props> = ({ cars, loadingCars, 
             <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">ΔΙΚΑΙΗ ΤΙΜΗ ΑΓΟΡΑΣ</span>
             <div className={`text-4xl font-extrabold mt-2 ${result.isIndicative ? "text-yellow-400" : "text-green-400"}`}>{formatNumber(result.fairMarketPrice)} €</div>
 
-            <div className="mt-2 text-sm text-gray-300">
-              Εύρος: <span className="font-semibold">{formatNumber(result.lowPrice)} – {formatNumber(result.highPrice)} €</span>
-              <div className="text-[11px] text-gray-500">Εκεί βρίσκεται το 50% των αγγελιών ανάλογων οχημάτων</div>
-            </div>
-            <div className="mt-2 text-[11px] text-gray-500">
-              Υπολογίστηκε για: {result.fuelUsed}, {formatNumber(result.engineCcUsed)} cc
-            </div>
+            {result.lowPrice !== undefined && result.highPrice !== undefined && (
+              <div className="mt-2 text-sm text-gray-300">
+                Εύρος: <span className="font-semibold">{formatNumber(result.lowPrice)} – {formatNumber(result.highPrice)} €</span>
+                <div className="text-[11px] text-gray-500">Εκεί βρίσκεται το 50% των αγγελιών ανάλογων οχημάτων</div>
+              </div>
+            )}
+            {result.fuelUsed && result.engineCcUsed !== undefined && (
+              <div className="mt-2 text-[11px] text-gray-500">
+                Υπολογίστηκε για: {result.fuelUsed}, {formatNumber(result.engineCcUsed)} cc
+              </div>
+            )}
 
             {result.isIndicative && (
               <div className="mt-3 text-xs font-medium text-yellow-300 bg-yellow-950/40 border border-yellow-900/60 rounded-lg px-3 py-2">
