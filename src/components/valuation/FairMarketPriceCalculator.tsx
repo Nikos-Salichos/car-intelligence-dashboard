@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { CarDto, FairMarketPriceDto, FairMarketPriceOptions } from "../../types";
-import { fuelLabel } from "../../utils/labels";
+import { FUEL_VALUES, fuelLabel } from "../../utils/labels";
 
 interface Props {
   cars: CarDto[];
@@ -14,7 +14,6 @@ const MAX_MILEAGE = 500_000; // must match the API limit, otherwise the API answ
 
 const formatNumber = (value: number) => value.toLocaleString("el-GR");
 
-const FUELS = ["Petrol", "Diesel", "Hybrid", "Hybrid petrol", "Plug-in hybrid petrol", "Electric", "Gas/lpg", "Natural gas(cng)"];
 const CONFIDENCE_LABEL = { High: "Υψηλή", Medium: "Μέτρια", Low: "Χαμηλή" } as const;
 
 export const FairMarketPriceCalculator: React.FC<Props> = ({ cars, loadingCars, calculating, result, onCalculate }) => {
@@ -112,7 +111,7 @@ export const FairMarketPriceCalculator: React.FC<Props> = ({ cars, loadingCars, 
               <label className="text-xs font-semibold text-gray-400">Καύσιμο (προαιρετικό)</label>
               <select className="bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-sm text-gray-100 focus:outline-none focus:border-blue-500 transition-colors" value={fuel} onChange={(e) => setFuel(e.target.value)}>
                 <option value="">Αυτόματα (συνηθέστερο)</option>
-                {FUELS.map((f) => (
+                {FUEL_VALUES.map((f) => (
                   <option key={f} value={f}>
                     {fuelLabel(f)}
                   </option>

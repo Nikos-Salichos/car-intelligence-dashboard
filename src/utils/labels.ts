@@ -10,6 +10,8 @@ const FUEL: Record<string, string> = {
   "Natural gas(cng)": "Φυσικό αέριο (CNG)",
 };
 
+export const FUEL_VALUES = Object.keys(FUEL); // the values the API uses, for filters
+
 export const fuelLabel = (fuel?: string | null): string => (fuel ? (FUEL[fuel] ?? fuel) : "—");
 
 export const sellerLabel = (seller?: string | null): string => (seller === "Dealer" ? "Έμπορος" : seller === "Private" ? "Ιδιώτης" : seller || "—");

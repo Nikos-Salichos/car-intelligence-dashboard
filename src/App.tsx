@@ -7,6 +7,7 @@ import { CompetitionPage } from "./pages/CompetitionPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ListingBriefPage } from "./pages/ListingBriefPage";
+import { OpportunitiesPage } from "./pages/OpportunitiesPage";
 import { TermsPage } from "./pages/TermsPage";
 import { PrivacyPage } from "./pages/PrivacyPage";
 import { Header } from "./components/layout/Header";
@@ -16,6 +17,7 @@ import { authApi } from "./api/authApi";
 
 const TABS = [
   { to: "/vfmdashboard", label: "🏆 Κατάταξη Ευκαιριών" },
+  { to: "/opportunities", label: "🎯 Ευκαιρίες" },
   { to: "/negotiation", label: "📉 Διαπραγμάτευση" },
   { to: "/competition", label: "🤝 Ιδιώτες vs Έμποροι" },
   { to: "/fair-market-price", label: "📊 Δίκαιη Τιμή Αγοράς" },
@@ -67,6 +69,7 @@ function AuthenticatedLayout({
             <Route path="/negotiation" element={<NegotiationSignalsPage />} />
             <Route path="/competition" element={<CompetitionPage />} />
             <Route path="/fair-market-price" element={<FairMarketPricePage />} />
+            <Route path="/opportunities" element={<OpportunitiesPage />} />
             <Route path="/brief/:listingId" element={<ListingBriefPage />} />
             <Route path="/settings" element={<SettingsPage userEmail={userEmail} />} />
             <Route path="/" element={<Navigate to="/vfmdashboard" replace />} />

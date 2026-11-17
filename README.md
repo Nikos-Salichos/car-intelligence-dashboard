@@ -9,6 +9,7 @@ React + TypeScript + Vite + Tailwind + AG Grid. Greek UI for used-car dealers. I
 |---|---|
 | `/vfmdashboard` | Opportunities ranked by "% cheaper than the market price expected for this exact car", with expected price, savings in EUR, confidence and a warning for suspiciously cheap listings. |
 | `/brief/:listingId` | "Φάκελος" of one listing (button in the leaderboard): fair price and range, days on the market, price history, what to offer (opening / target / walk-away) with the reasons, risk flags, comparable listings, a price chart with a dot per recorded price (date and amount, hover for the change), and a colour-coded box saying how many comparables really look like the car and how regional prices differ (`components/brief/ReliabilityBox.tsx`). Texts for the API's reason/flag codes live in `components/brief/briefTexts.ts`. |
+| `/opportunities` | "Ευκαιρίες": three views (`?view=new|mature|flip`): new listings ranked by resale margin with your own costs (and "just fell below the fair price"), listings ripe for negotiation with an offer, and private-to-dealer flips. Filters are applied with the button, not on every keystroke. |
 | `/negotiation` | Listings whose sellers already dropped the price. |
 | `/competition` | Private sellers vs dealers. |
 | `/fair-market-price` | Price range for a car (model + mileage, optional fuel/cc) from the same price model as the score. |

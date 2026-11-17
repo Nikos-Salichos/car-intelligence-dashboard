@@ -1,9 +1,15 @@
 import { apiClient } from "./apiClient";
 import * as T from "../types";
+import { OpportunityPageDto } from "../types/opportunities";
 
 export const dashboardApi = {
   getVfmLeaderboard: async (minScore = 0.0): Promise<T.VfmLeaderboardDto[]> => {
     const { data } = await apiClient.get(`/Reports/vfm-leaderboard?minScore=${minScore}`);
+    return data;
+  },
+
+  getOpportunities: async (params: Record<string, string | number | boolean>): Promise<OpportunityPageDto> => {
+    const { data } = await apiClient.get("/Reports/opportunities", { params });
     return data;
   },
 
