@@ -114,6 +114,12 @@ export interface NegotiationBriefDto {
   discountPct: number;
   confidence: "High" | "Medium" | "Low";
   comparableCount: number;
+  similarCount: number; // same fuel, year +-1, +-40.000 km
+  comparableMinMileage: number | null;
+  comparableMaxMileage: number | null;
+  regionPostalPrefix: string | null;
+  regionListingCount: number;
+  regionPriceVsModelPct: number | null;
   daysListed: number;
   daysSource: "Published" | "FirstSeen";
   priceDropCount: number;

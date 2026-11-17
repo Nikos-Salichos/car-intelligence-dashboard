@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { NegotiationBriefDto } from "../../types";
 import { PriceHistoryChart } from "./PriceHistoryChart";
 import { daysSourceText, eur, flagText, reasonText, verdictText } from "./briefTexts";
+import { ReliabilityBox } from "./ReliabilityBox";
 
 const CONFIDENCE: Record<string, string> = { High: "Υψηλή", Medium: "Μέτρια", Low: "Χαμηλή" };
 
@@ -47,6 +48,8 @@ export const ListingBrief: React.FC<{ brief: NegotiationBriefDto }> = ({ brief: 
         <Stat label="Μειώσεις τιμής" value={b.priceDropCount} hint={b.totalDropPct > 0 ? `Συνολικά −${b.totalDropPct}%` : undefined} />
       </div>
 
+      <ReliabilityBox brief={b} />
+
       <section className="bg-gray-900 border border-gray-800 rounded-xl p-5">
         <h2 className="text-sm font-bold text-gray-200">Τι να προσφέρεις</h2>
         <div className={`text-sm mt-1 ${verdict?.color ?? "text-gray-300"}`}>{verdict?.label}</div>
@@ -78,7 +81,8 @@ export const ListingBrief: React.FC<{ brief: NegotiationBriefDto }> = ({ brief: 
       </section>
 
       <section className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-        <h2 className="text-sm font-bold text-gray-200 mb-2">Ιστορικό τιμής</h2>
+        <h2 className="text-sm font-bold text-gray-200">Ιστορικό τιμής</h2>
+        <p className="text-[11px] text-gray-500 mb-2">Οι ημερομηνίες είναι όταν καταγράψαμε εμείς την τιμή, όχι όταν την άλλαξε ο πωλητής.</p>
         <PriceHistoryChart points={b.priceHistory} />
       </section>
 
