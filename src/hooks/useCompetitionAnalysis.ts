@@ -17,9 +17,9 @@ export const useCompetitionAnalysis = (initialMinPerSide = 3) => {
                 setError(null);
                 const data = await dashboardApi.getCompetitionAnalysis(minPerSide);
                 if (!cancelled) setRows(data);
-            } catch (err: unknown) {
+            } catch {
                 if (!cancelled) {
-                    setError(err instanceof Error ? err.message : "Αποτυχία φόρτωσης δεδομένων");
+                    setError("Αποτυχία φόρτωσης δεδομένων");
                 }
             } finally {
                 if (!cancelled) setLoading(false);

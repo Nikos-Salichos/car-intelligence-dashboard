@@ -22,12 +22,10 @@ export const useFairMarketPriceData = () => {
                     setCars(data);
                     setError(null);
                 }
-            } catch (err: unknown) {
+            } catch {
                 if (!isCancelled) {
                     const errorMessage =
-                        err instanceof Error
-                            ? err.message
-                            : "An error occurred while fetching the cars list.";
+                        "Η φόρτωση των οχημάτων απέτυχε. Δοκιμάστε ξανά.";
                     setError(errorMessage);
                 }
             } finally {
@@ -59,11 +57,9 @@ export const useFairMarketPriceData = () => {
                 dashboardApi.getFairMarketPrice(carId, userMileage, options)
             );
             setResult(data);
-        } catch (err: unknown) {
+        } catch {
             const errorMessage =
-                err instanceof Error
-                    ? err.message
-                    : "An error occurred while calculating the fair market price.";
+                "Η εκτίμηση τιμής απέτυχε. Δοκιμάστε ξανά.";
             setError(errorMessage);
         } finally {
             setCalculating(false);

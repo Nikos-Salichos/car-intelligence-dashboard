@@ -2,7 +2,8 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { NegotiationBriefDto } from "../../types";
 import { PriceHistoryChart } from "./PriceHistoryChart";
-import { daysSourceText, eur, flagText, reasonText, verdictText } from "./briefTexts";
+import { fuelLabel, sellerLabel } from "../../utils/labels";
+import { daysSourceText, eur, flagText, reasonText, unknownFlagText, verdictText } from "./briefTexts";
 import { ReliabilityBox } from "./ReliabilityBox";
 
 const CONFIDENCE: Record<string, string> = { High: "Υψηλή", Medium: "Μέτρια", Low: "Χαμηλή" };
@@ -27,7 +28,7 @@ export const ListingBrief: React.FC<{ brief: NegotiationBriefDto }> = ({ brief: 
           {b.brand} {b.model}
         </h1>
         <div className="text-xs text-gray-400">
-          {b.fuelType} · {b.mileage.toLocaleString("el-GR")} km · {b.sellerType === "Dealer" ? "Έμπορος" : "Ιδιώτης"} · {b.addressSeller}
+          {fuelLabel(b.fuelType)} · {b.mileage.toLocaleString("el-GR")} km · {sellerLabel(b.sellerType)} · {b.addressSeller}
         </div>
       </div>
 
@@ -35,7 +36,7 @@ export const ListingBrief: React.FC<{ brief: NegotiationBriefDto }> = ({ brief: 
         <div className="flex flex-col gap-2" role="alert">
           {b.flags.map((f) => (
             <div key={f} className="text-xs text-amber-300 bg-amber-950/40 border border-amber-900/60 rounded-lg px-3 py-2">
-              ⚠ {flagText[f] ?? f}
+              ⚠ {flagText[f] ?? unknownFlagText}
             </div>
           ))}
         </div>
@@ -109,8 +110,8 @@ export const ListingBrief: React.FC<{ brief: NegotiationBriefDto }> = ({ brief: 
                     <td className="py-1.5 pr-3">{c.year}</td>
                     <td className="pr-3">{c.mileage.toLocaleString("el-GR")} km</td>
                     <td className="pr-3 font-semibold text-gray-100">{eur(c.price)}</td>
-                    <td className="pr-3">{c.fuelType}</td>
-                    <td className="pr-3">{c.sellerType === "Dealer" ? "Έμπορος" : "Ιδιώτης"}</td>
+                    <td className="pr-3">{fuelLabel(c.fuelType)}</td>
+                    <td className="pr-3">{sellerLabel(c.sellerType)}</td>
                     <td>
                       <a href={c.listingUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
                         Άνοιγμα ↗

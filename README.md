@@ -31,5 +31,7 @@ Set the API address in the environment used by `src/api/apiClient.ts`.
 ## Conventions
 
 * One component per file; shared UI pieces live next to their feature (`components/sourcing/ScoreBadge.tsx`).
+* **All user-visible text is Greek.** Never show `err.message` (axios messages are English) or a raw API code: map codes
+  to Greek in `components/brief/briefTexts.ts` / `utils/labels.ts` (fuel and seller types), with a Greek fallback for unknown codes.
 * Navigation uses real links (`NavLink`), so keyboard and middle-click work.
 * Always update this README when behaviour changes.

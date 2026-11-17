@@ -17,9 +17,9 @@ export const useNegotiationSignals = (initialLevel: NegotiationLevel = "medium")
         setError(null);
         const data = await dashboardApi.getNegotiationSignals(minSignal);
         if (!cancelled) setSignals(data);
-      } catch (err: unknown) {
+      } catch {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load negotiation signals");
+          setError("Η φόρτωση των ενδείξεων διαπραγμάτευσης απέτυχε.");
         }
       } finally {
         if (!cancelled) setLoading(false);

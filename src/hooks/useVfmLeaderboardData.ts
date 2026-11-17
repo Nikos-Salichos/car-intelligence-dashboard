@@ -3,7 +3,7 @@ import { dashboardApi } from "../api/dashboardApi";
 import { withRetry } from "../utils/withRetry";
 import * as T from "../types";
 
-// English Comment: Isolated hook declaration specifically for managing the independent VFM Leaderboard lifecycle
+// English Comment: Isolated hook declaration specifically for managing the independent Κατάταξη Ευκαιριών lifecycle
 export const useVfmLeaderboardData = (initialMinScore: number = 0.0) => {
     const [minScore, setMinScore] = useState<number>(initialMinScore);
     const [loading, setLoading] = useState<boolean>(true);
@@ -22,13 +22,11 @@ export const useVfmLeaderboardData = (initialMinScore: number = 0.0) => {
                     setVfmLeaderboard(data);
                     setError(null);
                 }
-            } catch (err: unknown) {
+            } catch {
                 if (!isCancelled) {
                     // English Comment: Standard catch boundary fallback for unexpected request failures
                     const errorMessage =
-                        err instanceof Error
-                            ? err.message
-                            : "An unexpected error occurred while fetching the leaderboard metrics.";
+                        "Η φόρτωση της κατάταξης απέτυχε. Δοκιμάστε ξανά.";
                     setError(errorMessage);
                 }
             } finally {

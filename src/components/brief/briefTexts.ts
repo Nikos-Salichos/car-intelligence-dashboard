@@ -17,10 +17,12 @@ export const reasonText = (r: NegotiationReason): string => {
       return `Ο πωλητής έχει ήδη μειώσει την τιμή ${r.value} φορά/ές.`;
     case "price_negotiable":
       return "Ο πωλητής δέχεται προσφορές μέσω car.gr («Κάνε προσφορά»). Δεν σημαίνει ότι θα κατεβάσει την τιμή.";
-    default:
-      return r.code;
+    default: // a newer API than this UI: never show the raw code to the user
+      return "Υπάρχει επιπλέον ένδειξη που αυτή η έκδοση δεν γνωρίζει.";
   }
 };
+
+export const unknownFlagText = "Προσοχή: υπάρχει ένδειξη που αυτή η έκδοση δεν γνωρίζει. Ελέγξτε την αγγελία.";
 
 export const flagText: Record<string, string> = {
   suspect_price: "Ύποπτα χαμηλή τιμή: συχνά λάθος ή κρυφή ζημιά. Ελέγξτε την αγγελία πριν προχωρήσετε.",

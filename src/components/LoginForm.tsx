@@ -48,11 +48,11 @@ export const LoginForm: React.FC<Props> = ({ onSuccess }) => {
                 sessionStorage.removeItem("mfa_pre_auth_token");
                 onSuccess(response.token);
             } else {
-                setError("Invalid credentials or response payload from Auth API.");
+                setError("Μη έγκυρα στοιχεία σύνδεσης.");
             }
         } catch (err: unknown) {
             console.error("[LOGIN ERROR]", err);
-            setError("Login failed. Please verify your credentials and API connectivity.");
+            setError("Η σύνδεση απέτυχε. Ελέγξτε τα στοιχεία σας και τη σύνδεσή σας.");
         } finally {
             setLoading(false);
         }
@@ -73,13 +73,13 @@ export const LoginForm: React.FC<Props> = ({ onSuccess }) => {
                 onSuccess(response.token);
             } else {
                 setMfaCode("");
-                setError("Verification failed. Please double-check your code.");
+                setError("Η επαλήθευση απέτυχε. Ελέγξτε τον κωδικό.");
             }
         } catch (err: unknown) {
             console.error("[MFA VERIFY ERROR]", err);
             // English Comment: Retain MFA state on error and present inline alert
             setMfaCode("");
-            setError("Invalid or expired authentication code. Please try again.");
+            setError("Ο κωδικός δεν είναι σωστός ή έχει λήξει. Δοκιμάστε ξανά.");
         } finally {
             setLoading(false);
         }
@@ -108,7 +108,7 @@ export const LoginForm: React.FC<Props> = ({ onSuccess }) => {
                     <p className="text-sm text-slate-400 mt-2">
                         {requiresMfa
                             ? "Enter the 6-digit verification code from your authenticator app"
-                            : "Sign in to access real-time analytics and VFM leaderboard"}
+                            : "Συνδεθείτε για πρόσβαση στις αναλύσεις αγοράς και στην κατάταξη ευκαιριών"}
                     </p>
                 </div>
 
@@ -126,7 +126,7 @@ export const LoginForm: React.FC<Props> = ({ onSuccess }) => {
                     <form key="login-form" onSubmit={handleLoginSubmit} className="space-y-5">
                         <div>
                             <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                                Email Address
+                                Διεύθυνση email
                             </label>
                             <input
                                 type="email"
@@ -140,7 +140,7 @@ export const LoginForm: React.FC<Props> = ({ onSuccess }) => {
 
                         <div>
                             <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                                Password
+                                Κωδικός πρόσβασης
                             </label>
                             <div className="relative">
                                 <input
@@ -155,7 +155,7 @@ export const LoginForm: React.FC<Props> = ({ onSuccess }) => {
                                     type="button"
                                     onClick={() => setShowPassword((prev) => !prev)}
                                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 focus:text-blue-400 focus:outline-none transition-colors p-1 rounded-lg"
-                                    aria-label={showPassword ? "Hide password" : "Show password"}
+                                    aria-label={showPassword ? "Απόκρυψη κωδικού" : "Εμφάνιση κωδικού"}
                                 >
                                     {showPassword ? (
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -183,10 +183,10 @@ export const LoginForm: React.FC<Props> = ({ onSuccess }) => {
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                                     </svg>
-                                    Authenticating...
+                                    Σύνδεση...
                                 </span>
                             ) : (
-                                "Sign In"
+                                "Σύνδεση"
                             )}
                         </button>
                     </form>
@@ -195,7 +195,7 @@ export const LoginForm: React.FC<Props> = ({ onSuccess }) => {
                     <form key="mfa-form" onSubmit={handleMfaSubmit} className="space-y-5">
                         <div>
                             <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                                6-Digit Authenticator Code
+                                Κωδικός 6 ψηφίων από την εφαρμογή ταυτοποίησης
                             </label>
                             <input
                                 type="text"
@@ -220,10 +220,10 @@ export const LoginForm: React.FC<Props> = ({ onSuccess }) => {
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                                     </svg>
-                                    Verifying...
+                                    Επαλήθευση...
                                 </span>
                             ) : (
-                                "Verify Code"
+                                "Επαλήθευση κωδικού"
                             )}
                         </button>
 
@@ -232,7 +232,7 @@ export const LoginForm: React.FC<Props> = ({ onSuccess }) => {
                             onClick={resetToLogin}
                             className="w-full py-2.5 bg-transparent hover:bg-slate-800 text-slate-400 font-medium rounded-xl text-xs transition-colors mt-1 focus:outline-none"
                         >
-                            ← Back to credentials login
+                            ← Πίσω στη σύνδεση
                         </button>
                     </form>
                 )}

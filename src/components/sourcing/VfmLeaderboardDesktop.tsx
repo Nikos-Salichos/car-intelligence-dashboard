@@ -3,6 +3,7 @@ import { AgGridReact } from "ag-grid-react";
 import { ColDef, ICellRendererParams, ModuleRegistry, AllCommunityModule, ValidationModule, themeQuartz, colorSchemeDark, GridApi, GridReadyEvent } from "ag-grid-community";
 import { VfmLeaderboardDto } from "../../types";
 import { Link } from "react-router-dom";
+import { fuelLabel, sellerLabel } from "../../utils/labels";
 import { ScoreBadge } from "./ScoreBadge";
 
 // Register AG Grid Community modules once at module root scope
@@ -181,7 +182,7 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({ data }) => {
           const isElectric = params.data.fuelType?.toLowerCase().includes("electric") || params.data.fuelType?.toLowerCase().includes("ev");
           const unit = isElectric ? "kW" : "cc";
           const powerOrCapacity = params.data.engineCc ? `(${params.data.engineCc} ${unit})` : "";
-          return `${params.data.fuelType || ""} ${powerOrCapacity}`.trim();
+          return `${params.data.fuelType ? fuelLabel(params.data.fuelType) : ""} ${powerOrCapacity}`.trim();
         },
         cellRenderer: (params: CellParams) => {
           if (!params.data) {
@@ -191,7 +192,7 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({ data }) => {
           const unit = isElectric ? "kW" : "cc";
           return (
             <div className="flex items-center h-full text-gray-200 text-xs font-medium">
-              <span>{params.data.fuelType || "—"}</span>
+              <span>{fuelLabel(params.data.fuelType)}</span>
               {Boolean(params.data.engineCc) && (
                 <span className="text-gray-400 ml-1">
                   ({params.data.engineCc} {unit})
@@ -207,7 +208,7 @@ export const VfmLeaderboardDesktop: React.FC<Props> = ({ data }) => {
       {
         colId: "sellerType",
         headerName: "Τύπος πωλητή",
-        field: "sellerType",
+        valueGetter: (params) => sellerLabel(params.data?.sellerType), // the filter must match what the user sees
         cellRenderer: (params: CellParams) => <div className="flex items-center h-full text-gray-200 text-xs font-medium">{params.value || "—"}</div>,
         filter: "agTextColumnFilter",
         sortable: true,

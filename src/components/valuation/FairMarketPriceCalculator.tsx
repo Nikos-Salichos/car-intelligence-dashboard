@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { CarDto, FairMarketPriceDto, FairMarketPriceOptions } from "../../types";
+import { fuelLabel } from "../../utils/labels";
 
 interface Props {
   cars: CarDto[];
@@ -113,7 +114,7 @@ export const FairMarketPriceCalculator: React.FC<Props> = ({ cars, loadingCars, 
                 <option value="">Αυτόματα (συνηθέστερο)</option>
                 {FUELS.map((f) => (
                   <option key={f} value={f}>
-                    {f}
+                    {fuelLabel(f)}
                   </option>
                 ))}
               </select>
@@ -179,7 +180,7 @@ export const FairMarketPriceCalculator: React.FC<Props> = ({ cars, loadingCars, 
             )}
             {result.fuelUsed && result.engineCcUsed !== undefined && (
               <div className="mt-2 text-[11px] text-gray-500">
-                Υπολογίστηκε για: {result.fuelUsed}, {formatNumber(result.engineCcUsed)} cc
+                Υπολογίστηκε για: {fuelLabel(result.fuelUsed)}, {formatNumber(result.engineCcUsed)} cc
               </div>
             )}
 
