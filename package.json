@@ -10,8 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "ag-grid-community": "^36.1.0",
-    "ag-grid-react": "^36.1.0",
     "axios": "^1.18.1",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.7",

@@ -1,13 +1,13 @@
 import React from "react";
 import { PricePointDto } from "../../types";
+import { eur, shortDate } from "../../utils/format";
 
 const W = 640;
 const H = 240;
 const M = { left: 64, right: 24, top: 28, bottom: 44 };
 const MAX_LABELLED_POINTS = 8; // more points than this and only the tooltips show the details
 
-const date = (t: number) => new Date(t).toLocaleDateString("el-GR", { day: "2-digit", month: "2-digit", year: "2-digit" });
-const eur = (n: number) => `${Math.round(n).toLocaleString("el-GR")} €`;
+const date = (t: number) => shortDate(new Date(t).toISOString());
 
 // Price over time, one dot per recorded price (the dates are when WE saw the price, not when the seller changed it).
 // The price is constant between two recordings, so the line is a step line, extended to today.

@@ -1,7 +1,6 @@
 import React from "react";
 import { NegotiationBriefDto } from "../../types";
-
-const km = (n: number) => `${n.toLocaleString("el-GR")} km`;
+import { km } from "../../utils/format";
 
 type Level = { label: string; box: string; dot: string };
 const LEVELS: Record<"good" | "medium" | "low", Level> = {

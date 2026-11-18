@@ -1,242 +1,119 @@
-import React, { useState, useEffect } from "react";
-import { authApi } from "../api/authApi";
+import React, { useState } from "react";
+import { authApi } from "../api/auth";
+import { session } from "../api/session";
+import { Button } from "./ui/Button";
+import { Field, TextInput } from "./ui/Field";
+import { Notice } from "./ui/Feedback";
+import { Panel } from "./ui/Panel";
 
-interface Props {
-    onSuccess: (token: string) => void;
+// The MFA step must survive a page reload: the server only gave us a one-time token for it.
+const PENDING = "mfa_pending";
+interface Pending {
+  preAuthToken: string;
+  email: string;
 }
+const readPending = (): Pending | null => {
+  try {
+    return JSON.parse(sessionStorage.getItem(PENDING) ?? "null");
+  } catch {
+    return null;
+  }
+};
 
-export const LoginForm: React.FC<Props> = ({ onSuccess }) => {
-    const [email, setEmail] = useState<string>("");
-    const [password, setPassword] = useState<string>("");
-    const [showPassword, setShowPassword] = useState<boolean>(false);
-    const [loading, setLoading] = useState<boolean>(false);
-    const [error, setError] = useState<string | null>(null);
+/** Sign in with email and password, then (if the account has MFA) with the 6-digit code. A successful login saves the session; the app reacts to that. */
+export const LoginForm: React.FC = () => {
+  const [email, setEmail] = useState(() => readPending()?.email ?? "");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [pending, setPending] = useState<Pending | null>(readPending);
+  const [code, setCode] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    // English Comment: Persist MFA state across component unmounts using sessionStorage
-    const [requiresMfa, setRequiresMfa] = useState<boolean>(() => {
-        return Boolean(sessionStorage.getItem("mfa_pre_auth_token"));
-    });
+  const finish = (token: string, refreshToken?: string) => {
+    sessionStorage.removeItem(PENDING);
+    session.save({ token, refreshToken, email });
+  };
 
-    const [preAuthToken, setPreAuthToken] = useState<string>(() => {
-        return sessionStorage.getItem("mfa_pre_auth_token") || "";
-    });
+  const login = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      const r = await authApi.login(email, password);
+      if (r.requiresTwoFactor && r.preAuthToken) {
+        const next = { preAuthToken: r.preAuthToken, email };
+        sessionStorage.setItem(PENDING, JSON.stringify(next));
+        setPending(next);
+      } else if (r.token) finish(r.token, r.refreshToken);
+      else setError("Μη έγκυρα στοιχεία σύνδεσης.");
+    } catch {
+      setError("Η σύνδεση απέτυχε. Ελέγξτε τα στοιχεία σας και τη σύνδεσή σας.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const [mfaCode, setMfaCode] = useState<string>("");
+  const verify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pending) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const r = await authApi.verifyMfa(pending.preAuthToken, code);
+      if (r.token) finish(r.token, r.refreshToken);
+      else throw new Error("no token");
+    } catch {
+      setCode("");
+      setError("Ο κωδικός δεν είναι σωστός ή έχει λήξει. Δοκιμάστε ξανά.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    // English Comment: Keep sessionStorage in sync with preAuthToken state
-    useEffect(() => {
-        if (preAuthToken) {
-            sessionStorage.setItem("mfa_pre_auth_token", preAuthToken);
-        } else {
-            sessionStorage.removeItem("mfa_pre_auth_token");
-        }
-    }, [preAuthToken]);
+  const backToLogin = () => {
+    sessionStorage.removeItem(PENDING);
+    setPending(null);
+    setCode("");
+    setPassword("");
+    setError(null);
+  };
 
-    const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        setLoading(true);
-        setError(null);
-
-        try {
-            // English Comment: Dispatch login request to Auth API endpoint
-            const response = await authApi.login({ email, password });
-
-            if (response.requiresTwoFactor && response.preAuthToken) {
-                setPreAuthToken(response.preAuthToken);
-                setRequiresMfa(true);
-            } else if (response.token) {
-                sessionStorage.removeItem("mfa_pre_auth_token");
-                onSuccess(response.token);
-            } else {
-                setError("Μη έγκυρα στοιχεία σύνδεσης.");
-            }
-        } catch (err: unknown) {
-            console.error("[LOGIN ERROR]", err);
-            setError("Η σύνδεση απέτυχε. Ελέγξτε τα στοιχεία σας και τη σύνδεσή σας.");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleMfaSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        e.stopPropagation(); // English Comment: Prevent event bubbling to parent containers
-        setLoading(true);
-        setError(null);
-
-        try {
-            // English Comment: Validate TOTP verification code using pre-authentication token
-            const response = await authApi.verifyMfa({ preAuthToken, code: mfaCode });
-
-            if (response && response.token) {
-                sessionStorage.removeItem("mfa_pre_auth_token");
-                onSuccess(response.token);
-            } else {
-                setMfaCode("");
-                setError("Η επαλήθευση απέτυχε. Ελέγξτε τον κωδικό.");
-            }
-        } catch (err: unknown) {
-            console.error("[MFA VERIFY ERROR]", err);
-            // English Comment: Retain MFA state on error and present inline alert
-            setMfaCode("");
-            setError("Ο κωδικός δεν είναι σωστός ή έχει λήξει. Δοκιμάστε ξανά.");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const resetToLogin = () => {
-        // English Comment: Completely clear MFA session cache and return to login view
-        sessionStorage.removeItem("mfa_pre_auth_token");
-        setRequiresMfa(false);
-        setPreAuthToken("");
-        setMfaCode("");
-        setPassword("");
-        setError(null);
-    };
-
-    return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-950 p-4 font-sans text-slate-100">
-            <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl backdrop-blur-sm">
-                <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-600/10 border border-blue-500/20 mb-4 text-blue-500">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                        </svg>
-                    </div>
-                    <h2 className="text-2xl font-bold tracking-tight text-white">Car Scanner Intelligence</h2>
-                    <p className="text-sm text-slate-400 mt-2">
-                        {requiresMfa
-                            ? "Enter the 6-digit verification code from your authenticator app"
-                            : "Συνδεθείτε για πρόσβαση στις αναλύσεις αγοράς και στην κατάταξη ευκαιριών"}
-                    </p>
-                </div>
-
-                {error && (
-                    <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-xs flex items-start gap-3">
-                        <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span>{error}</span>
-                    </div>
-                )}
-
-                {!requiresMfa ? (
-                    /* English Comment: Form interface for standard email/password authentication */
-                    <form key="login-form" onSubmit={handleLoginSubmit} className="space-y-5">
-                        <div>
-                            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                                Διεύθυνση email
-                            </label>
-                            <input
-                                type="email"
-                                required
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="user@example.com"
-                                className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-200"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                                Κωδικός πρόσβασης
-                            </label>
-                            <div className="relative">
-                                <input
-                                    type={showPassword ? "text" : "password"}
-                                    required
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="••••••••"
-                                    className="w-full pl-4 pr-11 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-200"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword((prev) => !prev)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 focus:text-blue-400 focus:outline-none transition-colors p-1 rounded-lg"
-                                    aria-label={showPassword ? "Απόκρυψη κωδικού" : "Εμφάνιση κωδικού"}
-                                >
-                                    {showPassword ? (
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3l18 18" />
-                                        </svg>
-                                    ) : (
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                        </svg>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed mt-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 shadow-lg shadow-blue-600/20 active:scale-[0.99]"
-                        >
-                            {loading ? (
-                                <span className="flex items-center justify-center gap-2">
-                                    <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                    </svg>
-                                    Σύνδεση...
-                                </span>
-                            ) : (
-                                "Σύνδεση"
-                            )}
-                        </button>
-                    </form>
-                ) : (
-                    /* English Comment: Form interface for 2FA TOTP verification */
-                    <form key="mfa-form" onSubmit={handleMfaSubmit} className="space-y-5">
-                        <div>
-                            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                                Κωδικός 6 ψηφίων από την εφαρμογή ταυτοποίησης
-                            </label>
-                            <input
-                                type="text"
-                                required
-                                maxLength={6}
-                                autoFocus
-                                value={mfaCode}
-                                onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ""))}
-                                placeholder="123456"
-                                className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-600 text-center text-xl tracking-[0.5em] font-mono focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-200"
-                            />
-                        </div>
-
-                        <button
-                            type="submit"
-                            disabled={loading || mfaCode.length !== 6}
-                            className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed mt-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 shadow-lg shadow-blue-600/20 active:scale-[0.99]"
-                        >
-                            {loading ? (
-                                <span className="flex items-center justify-center gap-2">
-                                    <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                    </svg>
-                                    Επαλήθευση...
-                                </span>
-                            ) : (
-                                "Επαλήθευση κωδικού"
-                            )}
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={resetToLogin}
-                            className="w-full py-2.5 bg-transparent hover:bg-slate-800 text-slate-400 font-medium rounded-xl text-xs transition-colors mt-1 focus:outline-none"
-                        >
-                            ← Πίσω στη σύνδεση
-                        </button>
-                    </form>
-                )}
-            </div>
+  return (
+    <div className="flex-1 flex items-center justify-center p-4">
+      <Panel className="w-full max-w-md !p-8">
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-bold text-white">Car Scanner Intelligence</h1>
+          <p className="text-sm text-gray-400 mt-2">{pending ? "Εισάγετε τον κωδικό 6 ψηφίων από την εφαρμογή ταυτοποίησης" : "Συνδεθείτε για πρόσβαση στις αναλύσεις αγοράς και στις ευκαιρίες"}</p>
         </div>
-    );
+
+        {error && <Notice tone="danger" className="mb-4">{error}</Notice>}
+
+        {!pending ? (
+          <form onSubmit={login} className="flex flex-col gap-4">
+            <Field label="Διεύθυνση email">
+              <TextInput type="email" required autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="user@example.com" />
+            </Field>
+            <Field label="Κωδικός πρόσβασης">
+              <div className="flex gap-2">
+                <TextInput type={showPassword ? "text" : "password"} required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                <Button variant="ghost" aria-label={showPassword ? "Απόκρυψη κωδικού" : "Εμφάνιση κωδικού"} onClick={() => setShowPassword((s) => !s)}>
+                  {showPassword ? "🙈" : "👁"}
+                </Button>
+              </div>
+            </Field>
+            <Button type="submit" disabled={loading}>{loading ? "Σύνδεση..." : "Σύνδεση"}</Button>
+          </form>
+        ) : (
+          <form onSubmit={verify} className="flex flex-col gap-4">
+            <Field label="Κωδικός 6 ψηφίων από την εφαρμογή ταυτοποίησης">
+              <TextInput inputMode="numeric" autoComplete="one-time-code" maxLength={6} required autoFocus value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} className="text-center tracking-[0.4em] font-mono" />
+            </Field>
+            <Button type="submit" disabled={loading || code.length < 6}>{loading ? "Επαλήθευση..." : "Επαλήθευση κωδικού"}</Button>
+            <Button variant="ghost" onClick={backToLogin}>← Πίσω στη σύνδεση</Button>
+          </form>
+        )}
+      </Panel>
+    </div>
+  );
 };

@@ -1,43 +1,3 @@
-export interface UserContext {
-  email: string;
-  firstName: string;
-  lastName: string;
-  role: string;
-  companyId: number;
-}
-
-export interface LoginResponse {
-  token: string;
-  userContext: UserContext;
-}
-
-export interface VfmLeaderboardDto {
-  listingId: string;
-  brand: string;
-  model: string;
-  carYear?: number;
-  originalPriceEuros: number;
-  price: number;
-  priceDiscountOrIncreasePct: number;
-  mileage: number;
-  engineCc: number;
-  listingUrl: string;
-  sellerType: string;
-  fuelType: string;
-  addressSeller: string;
-  createdAt: string;
-  lastSeenAt: string;
-  isActive: boolean;
-  avgCategoryPrice: number;
-  avgCategoryMileage: number;
-  vfmScore: number; // % cheaper than the expected market price (negative = dearer)
-  expectedPrice: number;
-  savingsEuros: number;
-  comparableCount: number;
-  confidence: "High" | "Medium" | "Low";
-  isSuspect: boolean;
-}
-
 export interface CarDto {
   id: string;
   brand: string;
@@ -134,30 +94,6 @@ export interface NegotiationBriefDto {
 export interface FairMarketPriceOptions {
   fuel?: string;
   engineCc?: number;
-}
-
-export interface ScraperHealthDto {
-  totalTrackedModels: number;
-  activeListingsCount: number;
-  totalCarGrActive: number;
-  totalAutoTritiModels: number;
-  newListingsImportedToday: number;
-}
-
-export type NegotiationLevel = "high" | "medium" | "low";
-
-export interface NegotiationSignalDto {
-  listingId: string;
-  brand: string;
-  model: string;
-  listingUrl: string; // already a full car.gr URL from the backend
-  currentPrice: number;
-  initialPrice: number;
-  totalDropPct: number;
-  dropCount: number;
-  raiseCount: number;
-  lastDropAt: string | null;
-  negotiationSignal: "high" | "medium" | "low" | "none";
 }
 
 export interface CompetitionAnalysisDto {

@@ -1,7 +1,5 @@
 import { NegotiationReason } from "../../types";
 
-const eur = (n: number) => `${Math.round(n).toLocaleString("el-GR")} €`;
-
 // The API sends codes; this is the only place that turns them into Greek sentences.
 export const reasonText = (r: NegotiationReason): string => {
   switch (r.code) {
@@ -42,4 +40,3 @@ export const verdictText: Record<string, { label: string; color: string }> = {
 
 export const daysSourceText = (source: string) => (source === "Published" ? "από τη δημοσίευση στο car.gr" : "από τότε που την είδαμε πρώτη φορά");
 
-export { eur };
