@@ -45,7 +45,7 @@ export const SignalBadge: React.FC<{ o: OpportunityDto }> = ({ o }) => (
 
 export const Actions: React.FC<{ o: OpportunityDto }> = ({ o }) => (
   <div className="flex gap-2">
-    <LinkButton to={`/brief/${o.listingId}`}>Φάκελος</LinkButton>
+    <LinkButton to={`/brief/${o.listingId}`} newTab>Φάκελος</LinkButton>
     <LinkButton href={o.listingUrl} variant="primary">
       Άνοιγμα ↗
     </LinkButton>

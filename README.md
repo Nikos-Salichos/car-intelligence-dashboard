@@ -18,7 +18,7 @@ Two sections in the header, plus the account menu (settings, sign out):
 | `/terms`, `/privacy` | Public legal pages. |
 
 Old addresses (`/vfmdashboard`, `/negotiation`, `/competition`, `/fair-market-price`) redirect to the new ones.
-Brand, fuel and area (ΤΚ) are dropdowns where **several can be ticked at once**; their choices (with counts) come from the data (`GET /Reports/opportunities/filters`), so only choices that have cars appear. Area names are shown only where we are sure (`AREA_NAME` in `utils/labels.ts`), otherwise the 2-digit code.
+Brand, model, fuel and area (ΤΚ) are dropdowns where **several can be ticked at once**; their choices (with counts) come from the data (`GET /Reports/opportunities/filters`), so only choices that have cars appear. Models are listed under their brand, and ticking brands narrows the model list. An area reads "15 · Αττική (Pallini, Gerakas) · 4.024": prefecture and towns are taken from the listings' addresses (Latin letters), the prefecture is translated by `PREFECTURE` in `utils/labels.ts` (an unknown one is shown as written). The "Φάκελος" button opens in a new tab, so the list and its filters stay where they were.
 All lists are filtered, sorted and paged **by the server**; filters apply with the button, not on every keystroke.
 The estimates come from *asking* prices: differences below ~10% are market noise (tooltips and notes say so).
 

@@ -25,6 +25,9 @@ export const OpportunityFilterForm: React.FC<Props> = ({ view, value, onChange, 
   // Brands, fuels and areas come from the data, so only choices with cars are offered. If they fail to load the lists are simply empty.
   const choices = useApi(reportsApi.filters, "filters", "Δεν φορτώθηκαν οι επιλογές φίλτρων.").data;
   const list = (v: string) => v.split(",").filter(Boolean);
+  // A model is offered under its brand; with brands ticked only their models are listed.
+  const brands = list(value.brand);
+  const models = (choices?.models ?? []).filter((m) => brands.length === 0 || brands.includes(m.brand));
   const year = new Date().getFullYear();
 
   return (
@@ -41,7 +44,18 @@ export const OpportunityFilterForm: React.FC<Props> = ({ view, value, onChange, 
           placeholder="Όλες"
           options={(choices?.brands ?? []).map((b) => ({ value: b.value, label: `${b.value} (${b.count})` }))}
           value={list(value.brand)}
-          onChange={(next) => set("brand", next.join(","))}
+          onChange={(next) => {
+            // drop chosen models that no longer belong to a chosen brand
+            const keep = list(value.model).filter((m) => next.length === 0 || (choices?.models ?? []).some((c) => c.value === m && next.includes(c.brand)));
+            onChange({ ...value, brand: next.join(","), model: keep.join(",") });
+          }}
+        />
+        <MultiSelect
+          label="Μοντέλο"
+          placeholder="Όλα"
+          options={models.map((m) => ({ value: m.value, label: `${brands.length === 1 ? "" : `${m.brand} `}${m.value} (${m.count})` }))}
+          value={list(value.model)}
+          onChange={(next) => set("model", next.join(","))}
         />
         <Field label="Μέγιστη τιμή (€)">{text("maxPrice", { type: "number", min: 0 })}</Field>
         <Field label="Από έτος">
@@ -65,7 +79,7 @@ export const OpportunityFilterForm: React.FC<Props> = ({ view, value, onChange, 
         <MultiSelect
           label="Περιοχή (ΤΚ)"
           placeholder="Όλες"
-          options={(choices?.regions ?? []).map((r) => ({ value: r.value, label: areaLabel(r.value, r.count) }))}
+          options={(choices?.regions ?? []).map((r) => ({ value: r.value, label: areaLabel(r) }))}
           value={list(value.region)}
           onChange={(next) => set("region", next.join(","))}
         />

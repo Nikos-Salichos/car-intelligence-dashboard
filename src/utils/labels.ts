@@ -21,6 +21,21 @@ export const confidenceLabel = (c?: string | null): string => (c ? (CONFIDENCE_L
 
 export const SIGNAL_LABEL: Record<string, string> = { none: "Κανένα", low: "Χαμηλό", medium: "Μεσαίο", high: "Υψηλό" };
 
-/** Names for the postcode areas we are sure of; every other area is shown by its code. */
-const AREA_NAME: Record<string, string> = { "10": "Αθήνα", "11": "Αθήνα", "12": "Αθήνα", "13": "Αθήνα", "14": "Αθήνα", "15": "Αθήνα", "16": "Αθήνα", "17": "Αθήνα", "18": "Πειραιάς", "19": "Αν. Αττική", "26": "Πάτρα", "38": "Βόλος", "54": "Θεσσαλονίκη", "55": "Θεσσαλονίκη", "56": "Θεσσαλονίκη", "57": "Θεσσαλονίκη", "70": "Ηράκλειο", "71": "Ηράκλειο", "73": "Χανιά", "81": "Λέσβος" };
-export const areaLabel = (prefix: string, count: number): string => `${prefix}${AREA_NAME[prefix] ? ` · ${AREA_NAME[prefix]}` : ""} (${count})`;
+/** Greek names of the prefectures as the addresses write them in Latin letters; an unknown one is shown as written. */
+const PREFECTURE: Record<string, string> = {
+  ATTIKIS: "Αττική", ATHINA: "Αθήνα", THESSALONIKI: "Θεσσαλονίκη", ACHAIA: "Αχαΐα", PATRA: "Πάτρα", PATRAS: "Πάτρα", AITOLOAKARNANIA: "Αιτωλοακαρνανία", ARCADIA: "Αρκαδία",
+  ARGOLIS: "Αργολίδα", ARTA: "Άρτα", BOEOTIA: "Βοιωτία", CHANIA: "Χανιά", CHIOS: "Χίος", CORFU: "Κέρκυρα", CORINTH: "Κορινθία", CYCLADES: "Κυκλάδες", DODECANESE: "Δωδεκάνησα",
+  DRAMA: "Δράμα", ELIAS: "Ηλεία", EVIA: "Εύβοια", EVROS: "Έβρος", EVRYTANIA: "Ευρυτανία", FLORINA: "Φλώρινα", FOKIDA: "Φωκίδα", FTHIOTIDA: "Φθιώτιδα", GREVENA: "Γρεβενά",
+  HALKIDIKI: "Χαλκιδική", HERAKLION: "Ηράκλειο", IMATHIA: "Ημαθία", IOANNINA: "Ιωάννινα", IWANNINA: "Ιωάννινα", KARDITSA: "Καρδίτσα", KASTORIA: "Καστοριά", KAVALA: "Καβάλα",
+  KEFALONIA: "Κεφαλονιά", KILKIS: "Κιλκίς", KOZANI: "Κοζάνη", LACONIA: "Λακωνία", LARISSA: "Λάρισα", LARISA: "Λάρισα", LASSITHI: "Λασίθι", LEFKADA: "Λευκάδα", LESVOS: "Λέσβος",
+  MAGNESIA: "Μαγνησία", VOLOS: "Βόλος", MESSENIA: "Μεσσηνία", PELLA: "Πέλλα", PIERIA: "Πιερία", PREVEZA: "Πρέβεζα", RETHYMNO: "Ρέθυμνο", RHODOPE: "Ροδόπη", SAMOS: "Σάμος",
+  SERRES: "Σέρρες", THESPROTIA: "Θεσπρωτία", TRIKALA: "Τρίκαλα", XANTHI: "Ξάνθη", ZAKINTHOS: "Ζάκυνθος",
+};
+const titleCase = (t: string) => t.toLowerCase().replace(/(^|[\s.-])\S/g, (c) => c.toUpperCase());
+
+/** "15 · Αττική (Pallini, Gerakas) · 4.024": the code, the prefecture and the biggest towns, all read from the listings' addresses. */
+export const areaLabel = (r: { value: string; count: number; name: string | null; towns: string[] }): string => {
+  const name = r.name ? (PREFECTURE[r.name] ?? titleCase(r.name)) : "";
+  const towns = r.towns.filter((t) => t !== r.name).map(titleCase).join(", ");
+  return `${r.value}${name ? ` · ${name}` : ""}${towns ? ` (${towns})` : ""} · ${r.count}`;
+};

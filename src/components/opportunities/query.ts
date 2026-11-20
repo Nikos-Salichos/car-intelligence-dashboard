@@ -12,6 +12,7 @@ export const buildQuery = (view: OpportunityView, f: OpportunityFilters, sort: S
   };
 
   set("brand", f.brand);
+  set("model", f.model);
   set("maxPrice", f.maxPrice);
   set("minYear", f.minYear);
   set("maxMileage", f.maxMileage);

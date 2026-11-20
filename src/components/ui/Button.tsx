@@ -25,9 +25,9 @@ export const Button: React.FC<Common & React.ButtonHTMLAttributes<HTMLButtonElem
 );
 
 /** A link that looks like a button: inside the app (`to`) or to another site (`href`, opens in a new tab). */
-export const LinkButton: React.FC<Common & { to?: string; href?: string; children: React.ReactNode; className?: string }> = ({ variant = "secondary", size = "sm", to, href, children, className }) =>
+export const LinkButton: React.FC<Common & { to?: string; href?: string; newTab?: boolean; children: React.ReactNode; className?: string }> = ({ variant = "secondary", size = "sm", to, href, children, className, newTab }) =>
   to ? (
-    <Link to={to} className={style(variant, size, className)}>
+    <Link to={to} {...(newTab ? { target: "_blank", rel: "noopener noreferrer" } : {})} className={style(variant, size, className)}>
       {children}
     </Link>
   ) : (

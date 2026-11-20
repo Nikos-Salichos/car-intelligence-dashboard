@@ -58,6 +58,7 @@ export interface Sort {
 export interface OpportunityFilters {
   // shared
   brand: string;
+  model: string; // model names without the year, several separated by commas
   maxPrice: string;
   minYear: string;
   maxMileage: string;
@@ -86,6 +87,7 @@ export interface OpportunityFilters {
 
 export const DEFAULT_FILTERS: OpportunityFilters = {
   brand: "",
+  model: "",
   maxPrice: "",
   minYear: "",
   maxMileage: "",

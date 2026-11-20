@@ -7,10 +7,15 @@ export interface Choice {
   count: number;
 }
 /** What the filters can offer: only brands, fuels and postcode areas that have active listings. */
+export interface Region extends Choice {
+  name: string | null; // prefecture (or town for big cities), as written in the addresses
+  towns: string[];
+}
 export interface FilterChoices {
   brands: Choice[];
+  models: (Choice & { brand: string })[];
   fuels: Choice[];
-  regions: Choice[];
+  regions: Region[];
 }
 
 export type Query = Record<string, string | number | boolean>;
