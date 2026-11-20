@@ -18,6 +18,7 @@ Two sections in the header, plus the account menu (settings, sign out):
 | `/terms`, `/privacy` | Public legal pages. |
 
 Old addresses (`/vfmdashboard`, `/negotiation`, `/competition`, `/fair-market-price`) redirect to the new ones.
+Brand, fuel and area (ΤΚ) are dropdowns where **several can be ticked at once**; their choices (with counts) come from the data (`GET /Reports/opportunities/filters`), so only choices that have cars appear. Area names are shown only where we are sure (`AREA_NAME` in `utils/labels.ts`), otherwise the 2-digit code.
 All lists are filtered, sorted and paged **by the server**; filters apply with the button, not on every keystroke.
 The estimates come from *asking* prices: differences below ~10% are market noise (tooltips and notes say so).
 
@@ -30,7 +31,7 @@ src/
   utils/        format.ts (money, %, km, dates), labels.ts (fuel, seller, confidence, signal)
   types/        what the API sends
   components/
-    ui/         the design system: Button/LinkButton, Panel/StatTile, Field/TextInput/Select/Checkbox,
+    ui/         the design system: Button/LinkButton, Panel/StatTile, Field/TextInput/Select/MultiSelect/Checkbox,
                 Notice/Badge/Loading/Empty, Tabs, Pagination, DataTable (table on desktop, cards on phones)
     layout/     Header (nav + account menu), Footer, Page (one width/padding for every screen)
     opportunities/  filter form, query builder, columns, cells, list (state per view), per-model table

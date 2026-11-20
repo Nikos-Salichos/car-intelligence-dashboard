@@ -20,3 +20,7 @@ export const CONFIDENCE_LABEL: Record<string, string> = { High: "Υψηλή", Me
 export const confidenceLabel = (c?: string | null): string => (c ? (CONFIDENCE_LABEL[c] ?? c) : "—");
 
 export const SIGNAL_LABEL: Record<string, string> = { none: "Κανένα", low: "Χαμηλό", medium: "Μεσαίο", high: "Υψηλό" };
+
+/** Names for the postcode areas we are sure of; every other area is shown by its code. */
+const AREA_NAME: Record<string, string> = { "10": "Αθήνα", "11": "Αθήνα", "12": "Αθήνα", "13": "Αθήνα", "14": "Αθήνα", "15": "Αθήνα", "16": "Αθήνα", "17": "Αθήνα", "18": "Πειραιάς", "19": "Αν. Αττική", "26": "Πάτρα", "38": "Βόλος", "54": "Θεσσαλονίκη", "55": "Θεσσαλονίκη", "56": "Θεσσαλονίκη", "57": "Θεσσαλονίκη", "70": "Ηράκλειο", "71": "Ηράκλειο", "73": "Χανιά", "81": "Λέσβος" };
+export const areaLabel = (prefix: string, count: number): string => `${prefix}${AREA_NAME[prefix] ? ` · ${AREA_NAME[prefix]}` : ""} (${count})`;

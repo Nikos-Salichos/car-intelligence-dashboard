@@ -1,9 +1,12 @@
 import React from "react";
+import { reportsApi } from "../../api/reports";
+import { useApi } from "../../hooks/useApi";
+import { MultiSelect } from "../ui/MultiSelect";
 import { Button } from "../ui/Button";
 import { Checkbox, Field, Select, TextInput } from "../ui/Field";
 import { Panel } from "../ui/Panel";
 import { NEGOTIATION_PRESETS, NegotiationSignal, OpportunityFilters, OpportunityView } from "../../types/opportunities";
-import { FUEL_VALUES, fuelLabel, SIGNAL_LABEL } from "../../utils/labels";
+import { fuelLabel, SIGNAL_LABEL, areaLabel } from "../../utils/labels";
 
 interface Props {
   view: OpportunityView;
@@ -19,6 +22,11 @@ export const OpportunityFilterForm: React.FC<Props> = ({ view, value, onChange, 
     <TextInput value={value[key] as string} onChange={(e) => set(key, e.target.value as never)} {...props} />
   );
 
+  // Brands, fuels and areas come from the data, so only choices with cars are offered. If they fail to load the lists are simply empty.
+  const choices = useApi(reportsApi.filters, "filters", "Δεν φορτώθηκαν οι επιλογές φίλτρων.").data;
+  const list = (v: string) => v.split(",").filter(Boolean);
+  const year = new Date().getFullYear();
+
   return (
     <Panel>
       <form
@@ -28,23 +36,39 @@ export const OpportunityFilterForm: React.FC<Props> = ({ view, value, onChange, 
           onApply();
         }}
       >
-        <Field label="Μάρκα">{text("brand", { placeholder: "π.χ. Toyota" })}</Field>
+        <MultiSelect
+          label="Μάρκα"
+          placeholder="Όλες"
+          options={(choices?.brands ?? []).map((b) => ({ value: b.value, label: `${b.value} (${b.count})` }))}
+          value={list(value.brand)}
+          onChange={(next) => set("brand", next.join(","))}
+        />
         <Field label="Μέγιστη τιμή (€)">{text("maxPrice", { type: "number", min: 0 })}</Field>
-        <Field label="Από έτος">{text("minYear", { type: "number", min: 1990 })}</Field>
-        <Field label="Μέγιστα χιλιόμετρα">{text("maxMileage", { type: "number", min: 0 })}</Field>
-        <Field label="Καύσιμο">
-          <Select value={value.fuel} onChange={(e) => set("fuel", e.target.value)}>
+        <Field label="Από έτος">
+          <Select value={value.minYear} onChange={(e) => set("minYear", e.target.value)}>
             <option value="">Όλα</option>
-            {FUEL_VALUES.map((f) => (
-              <option key={f} value={f}>
-                {fuelLabel(f)}
+            {Array.from({ length: year - 1999 }, (_, i) => year - i).map((y) => (
+              <option key={y} value={y}>
+                {y}
               </option>
             ))}
           </Select>
         </Field>
-        <Field label="Περιοχή (ΤΚ)" hint="2 πρώτα ψηφία, π.χ. 81 = Λέσβος">
-          {text("region", { inputMode: "numeric", maxLength: 2, placeholder: "—" })}
-        </Field>
+        <Field label="Μέγιστα χιλιόμετρα">{text("maxMileage", { type: "number", min: 0 })}</Field>
+        <MultiSelect
+          label="Καύσιμο"
+          placeholder="Όλα"
+          options={(choices?.fuels ?? []).map((f) => ({ value: f.value, label: `${fuelLabel(f.value)} (${f.count})` }))}
+          value={list(value.fuel)}
+          onChange={(next) => set("fuel", next.join(","))}
+        />
+        <MultiSelect
+          label="Περιοχή (ΤΚ)"
+          placeholder="Όλες"
+          options={(choices?.regions ?? []).map((r) => ({ value: r.value, label: areaLabel(r.value, r.count) }))}
+          value={list(value.region)}
+          onChange={(next) => set("region", next.join(","))}
+        />
         {view !== "flip" && (
           <Field label="Πωλητής">
             <Select value={value.seller} onChange={(e) => set("seller", e.target.value)}>
